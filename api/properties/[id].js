@@ -2,8 +2,10 @@
 // DELETE /api/properties/:id  -> remove the record
 
 const { update, remove } = require('../../lib/properties');
+const { requireAuth } = require('../../lib/auth');
 
 module.exports = async function handler(req, res) {
+  if (!requireAuth(req, res)) return;
   const id = Number(req.query.id);
   if (!Number.isInteger(id)) {
     res.status(400).json({ error: 'id must be an integer' });

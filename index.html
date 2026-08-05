@@ -23,6 +23,15 @@
     --paper-card: #FAF8F1;
     --shadow: rgba(38,47,39,0.08);
     --edit-bg: #FFF7DC;
+
+    /* Triangle Investment Group brand colors — used on the passcode screen */
+    --brand-green: #2FA84C;
+    --brand-green-deep: #2C6B32;
+    --brand-green-deep-hover: #24592A;
+    --brand-navy: #23262B;
+    --brand-gray: #6B7280;
+    --brand-page-bg: #F3F4F6;
+    --brand-border: #D9DCE1;
   }
 
   *{ box-sizing: border-box; }
@@ -42,6 +51,106 @@
 
   a{ color: inherit; }
   button{ font-family: inherit; }
+
+  /* ---------- Passcode gate ---------- */
+  .login-screen{
+    position: fixed;
+    inset: 0;
+    background: var(--brand-page-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 1000;
+  }
+  .login-card{
+    width: 100%;
+    max-width: 440px;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 20px 45px rgba(35,38,43,0.14), 0 2px 8px rgba(35,38,43,0.06);
+  }
+  .login-topbar{
+    height: 5px;
+    background: var(--brand-green);
+  }
+  .login-body{
+    padding: 34px 36px 36px;
+  }
+  .login-brand{
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 7px;
+  }
+  .login-triangle{
+    width: 13px;
+    height: 17px;
+    flex-shrink: 0;
+    background: var(--brand-green);
+    clip-path: polygon(0 0, 0 100%, 100% 50%);
+  }
+  .login-wordmark{
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 700;
+    font-size: 24px;
+    letter-spacing: 0.01em;
+    color: var(--brand-navy);
+  }
+  .login-subtitle{
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--brand-gray);
+    font-weight: 500;
+    margin-bottom: 28px;
+  }
+  .login-label{
+    display: block;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--brand-navy);
+    margin-bottom: 8px;
+  }
+  .login-input{
+    width: 100%;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 15px;
+    padding: 11px 14px;
+    border: 1.5px solid var(--brand-border);
+    border-radius: 6px;
+    outline: none;
+    margin-bottom: 18px;
+    box-sizing: border-box;
+    color: var(--brand-navy);
+  }
+  .login-input:focus{
+    border-color: var(--brand-green);
+    box-shadow: 0 0 0 3px rgba(47,168,76,0.16);
+  }
+  .login-btn{
+    width: 100%;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--brand-green-deep);
+    border: none;
+    border-radius: 6px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: background .12s ease;
+  }
+  .login-btn:hover{ background: var(--brand-green-deep-hover); }
+  .login-btn:disabled{ opacity: 0.65; cursor: default; }
+  .login-error{
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--review);
+    min-height: 1em;
+  }
 
   .wrap{
     max-width: 1220px;
@@ -637,7 +746,26 @@
 </head>
 <body>
 
-<div class="wrap">
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-topbar" aria-hidden="true"></div>
+    <div class="login-body">
+      <div class="login-brand">
+        <span class="login-triangle" aria-hidden="true"></span>
+        <span class="login-wordmark">TRIANGLE</span>
+      </div>
+      <div class="login-subtitle">Investment Group &middot; Property Basis Record</div>
+      <form id="loginForm" autocomplete="off">
+        <label class="login-label" for="passcodeInput">Passcode</label>
+        <input type="password" id="passcodeInput" class="login-input" autocomplete="current-password" autofocus>
+        <button type="submit" class="login-btn" id="loginSubmitBtn">Enter</button>
+        <div class="login-error" id="loginError"></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" id="mainWrap" style="display:none">
 
   <header class="masthead">
     <div class="masthead-title">
@@ -778,7 +906,9 @@
     let body = null;
     try { body = await res.json(); } catch (e) { /* no body */ }
     if (!res.ok){
-      throw new Error((body && body.error) || ('Request failed (' + res.status + ')'));
+      const err = new Error((body && body.error) || ('Request failed (' + res.status + ')'));
+      err.status = res.status;
+      throw err;
     }
     return body;
   }
@@ -791,6 +921,9 @@
       method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(fields)
     }),
     remove: (id) => apiFetch('/api/properties/' + id, { method: 'DELETE' }),
+    login: (passcode) => apiFetch('/api/login', {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ passcode })
+    }),
   };
 
   // ---------- Period data model ----------
@@ -1666,6 +1799,49 @@
     document.getElementById('retryLoadBtn').addEventListener('click', retry);
   }
 
+  // ---------- Passcode gate ----------
+  const loginScreen = document.getElementById('loginScreen');
+  const mainWrap = document.getElementById('mainWrap');
+
+  function showApp(){
+    loginScreen.style.display = 'none';
+    mainWrap.style.display = '';
+  }
+
+  function showLogin(){
+    mainWrap.style.display = 'none';
+    loginScreen.style.display = 'flex';
+    const input = document.getElementById('passcodeInput');
+    input.value = '';
+    input.focus();
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('passcodeInput');
+    const errorBox = document.getElementById('loginError');
+    const submitBtn = document.getElementById('loginSubmitBtn');
+    const passcode = input.value;
+    errorBox.textContent = '';
+    if (!passcode){
+      errorBox.textContent = 'Enter the passcode.';
+      return;
+    }
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Checking…';
+    try {
+      await api.login(passcode);
+      await boot();
+    } catch (err){
+      errorBox.textContent = err.status === 401 ? 'Incorrect passcode.' : (err.message || 'Something went wrong.');
+      input.value = '';
+      input.focus();
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Enter';
+    }
+  });
+
   async function boot(){
     renderLoading();
     try {
@@ -1683,10 +1859,16 @@
       [...data.basis, ...data.not_relevant, ...data.not_included].forEach(r => {
         if (r.address) addressByName[r.name] = r.address;
       });
+      showApp();
       renderTabs();
       renderPanel();
     } catch (err){
-      renderLoadError(err.message, boot);
+      if (err.status === 401){
+        showLogin();
+      } else {
+        showApp();
+        renderLoadError(err.message, boot);
+      }
     }
   }
 

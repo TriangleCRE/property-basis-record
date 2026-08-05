@@ -2,8 +2,10 @@
 // POST /api/properties  -> create a new record, body: { category, name, land?, building?, accdep?, address?, extra? }
 
 const { listAll, create } = require('../lib/properties');
+const { requireAuth } = require('../lib/auth');
 
 module.exports = async function handler(req, res) {
+  if (!requireAuth(req, res)) return;
   try {
     if (req.method === 'GET') {
       const data = await listAll();

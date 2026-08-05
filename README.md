@@ -51,6 +51,27 @@ These are optional — the live site never requires them to have been run.
 - `PUT    /api/properties/:id` — update one or more fields
 - `DELETE /api/properties/:id` — remove a record
 
+All four require a valid session (see below) and respond `401` without one.
+
+## Passcode gate
+
+The site sits behind a single shared passcode, read from the `PASSCODE`
+environment variable:
+
+- `POST /api/login` — body `{ passcode }`. On a match it sets an `HttpOnly`
+  session cookie (`pbr_session`) and responds `{ ok: true }`; on a mismatch
+  it responds `401` with a generic error. The passcode is only ever compared
+  server-side (`lib/auth.js`, timing-safe comparison) — it's never sent to
+  or embedded in the front end.
+- `POST /api/logout` — clears the session cookie.
+- The session cookie is a signed, expiring token (7 days) — not a random ID
+  stored server-side — so it needs no database table. Its signing key is
+  derived from `PASSCODE` itself, so rotating the passcode instantly
+  invalidates every outstanding session.
+- `index.html` shows a passcode entry screen and only loads the dashboard
+  after `GET /api/properties` succeeds; a `401` sends it back to the
+  passcode screen instead.
+
 ## Front end
 
 `index.html` fetches from the API on load and writes every add/edit/delete
