@@ -521,6 +521,25 @@
     align-items:baseline;
   }
   .simplelist .row:last-child{ border-bottom:none; }
+  .simplelist .row .row-main{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap: 16px;
+    flex: 1;
+    min-width: 0;
+  }
+  .row-delete{
+    background:none;
+    border:none;
+    color: var(--ink-soft);
+    font-size: 16px;
+    line-height:1;
+    cursor:pointer;
+    padding: 2px 4px;
+    flex-shrink:0;
+  }
+  .row-delete:hover{ color: var(--review); }
   .simplelist .row .extra{
     font-size: 12.5px;
     color: var(--ink-soft);
@@ -650,11 +669,6 @@
 </div>
 
 <script>
-const SITE_DATA = {"basis_raw":[{"name":"Center - Gander","land":5055212.79,"building":5383667.28,"accdep":2429652.35},{"name":"Center - 1854 E Market St","land":844415.85,"building":2191961.27,"accdep":1287750.09},{"name":"Center - Tire Mart","land":408821.5,"building":1994508.12,"accdep":1176077.15},{"name":"Center - Genesis","land":185812.77,"building":415958.43,"accdep":262418.24},{"name":"Center - 2655 S Main St. Hburg","land":680853.41,"building":752087.03,"accdep":388328.37},{"name":"Center - Verona","land":677177,"building":2365470.32,"accdep":1297098.69},{"name":"Center - Heritage building","land":225791.76,"building":684438.46,"accdep":478304.25},{"name":"Center - Elliott","land":659524.44,"building":892522.85,"accdep":387794.13},{"name":"Center - Hoy","land":685714,"building":1200400.4,"accdep":710314.01},{"name":"Center - Sunnyside","land":319784.41,"building":1809390.77,"accdep":481736.98},{"name":"Center - Log Lot","land":416881.3,"building":1320787,"accdep":579720.02},{"name":"Center - 143/153 Crown Drive","land":1072251.87,"building":5553564.12,"accdep":1382331.13},{"name":"Building - Caliber","land":84919,"building":1473865.5,"accdep":914555.58},{"name":"Building - Honda Auto Body shop/Swartz","land":1349561.54,"building":84325.69,"accdep":23258.93},{"name":"Building - F&M Bank","land":null,"building":148452.52,"accdep":118215.76},{"name":"Building - Old Planters LLC","land":155184.57,"building":386414.59,"accdep":229970.06},{"name":"Building - Flow Corner","land":null,"building":20875,"accdep":34634.17},{"name":"Building - Flow Center Lot","land":3629994.21,"building":1515068.03,"accdep":342598.66},{"name":"FPT - Habitat Warehouse - Building","land":null,"building":2325,"accdep":null},{"name":"Building - Wells Property/Bookstore","land":97369.99,"building":410593.51,"accdep":76871.03},{"name":"Lot - McDonough Toyota ground lease, DDC (2 lots)","land":166901,"building":13210,"accdep":14622.37},{"name":"Building & Bays - 808 Richmond","land":70000,"building":408113.69,"accdep":372797.08},{"name":"Building - 802 Richmond (Dahl Invest)","land":31520.4,"building":46523.82,"accdep":46532.82},{"name":"Building - Log Lot - Old Cash Advance","land":null,"building":125426.45,"accdep":116434.64},{"name":"Building - Office NDEP","land":88700,"building":436909.06,"accdep":168163.39},{"name":"House - 337 Lancaster Ave","land":4920,"building":147994.53,"accdep":88755.08},{"name":"House - 304 Powell St.","land":4046,"building":50358.69,"accdep":40539.62},{"name":"House - 76 Young St.","land":null,"building":40196.41,"accdep":22828.99},{"name":"Dahl - Payne House","land":null,"building":158153.54,"accdep":85039.72},{"name":"GAE - Nags Head House","land":null,"building":475563.33,"accdep":null},{"name":"GAE - Smith Mountain Lake House","land":null,"building":300144.17,"accdep":null},{"name":"House - 910 Richmond","land":152736.19,"building":103492.06,"accdep":30577.27},{"name":"Dahl - Woodlee House (GAE)","land":null,"building":263486.44,"accdep":179089.27},{"name":"Lot - next to Hoy Center 1","land":101496.07,"building":null,"accdep":null},{"name":"Lot - Arehart (Part of Pole Lot Development)","land":398754.65,"building":125884.72,"accdep":44238.11},{"name":"Lot - next to Hoy Center 2","land":48373.97,"building":null,"accdep":null},{"name":"Lot - next to Hoy Center 3","land":824.44,"building":null,"accdep":null},{"name":"Lot - Pole Lot","land":370894.16,"building":null,"accdep":null},{"name":"Lot - Hunter Ave Properties","land":170410.04,"building":null,"accdep":null},{"name":"Lot - by Chipotle Center/Longhorn","land":381783.54,"building":null,"accdep":null},{"name":"Lot - Staunton Crossing Back","land":1506063.88,"building":null,"accdep":null},{"name":"Lot - behind Subaru/Old Ray Car, DDC","land":9666.03,"building":null,"accdep":null},{"name":"Lot - behind Subaru/Old Ray Car, GCS","land":358731.04,"building":null,"accdep":null},{"name":"Lot - 4.977 acres Windigrove, Waynesboro","land":1602516.79,"building":null,"accdep":null},{"name":"Lot - Windigrove, Waynesboro","land":5447.58,"building":null,"accdep":null},{"name":"Lot - 3 Acres off of Statler Blvd/Hunter Ave","land":232264.1,"building":null,"accdep":null},{"name":"Lot - next to Thomas's Staunton house","land":32703.63,"building":null,"accdep":null},{"name":"Lot - Eiland, Partial 1","land":590783.29,"building":null,"accdep":null},{"name":"Lot - Eiland, Partial 2","land":2131.2,"building":null,"accdep":null},{"name":"Lot - Eiland, Partial 3","land":2131.2,"building":null,"accdep":null},{"name":"Lot - Eiland, Partial 6","land":62.19,"building":null,"accdep":null},{"name":"Lot - Eiland, Partial 7","land":41239.6,"building":null,"accdep":10464.28},{"name":"Lot - Eiland, Partial 8","land":37313.48,"building":null,"accdep":null},{"name":"Lot - Eiland, Partial 9","land":44424.6,"building":null,"accdep":null},{"name":"Lot - Eiland, Partial 10","land":28087.15,"building":null,"accdep":null},{"name":"Lot - next to Outback 1","land":444494.88,"building":null,"accdep":null},{"name":"Lot - next to Outback 2","land":19591.32,"building":null,"accdep":null},{"name":"Lot - Storage Lot O'baugh Ford - Augusta Lot 1","land":10841.47,"building":null,"accdep":null},{"name":"Lot - behind O'baugh Ford - 2 Staunton Lots","land":367097.85,"building":null,"accdep":null},{"name":"Lot - behind Hoy Center","land":312,"building":null,"accdep":null},{"name":"Lot - behind Hoy Center- Crawford lot","land":960.54,"building":null,"accdep":null},{"name":"Lot - behind Bills TV 1","land":151155.5,"building":null,"accdep":null},{"name":"Lot - behind Bills TV 2","land":191.16,"building":null,"accdep":null},{"name":"Lot - behind Bills TV 3","land":630,"building":null,"accdep":null},{"name":"Lot - 801 Hunter Ave","land":942.68,"building":null,"accdep":null},{"name":"Lot - behind 808 Richmond Building 2","land":177.74,"building":null,"accdep":null},{"name":"Lot - 804 Hunter behind 808 Richmond","land":477742.57,"building":null,"accdep":null},{"name":"Lot - behind 808 Richmond Building 1","land":63.1,"building":null,"accdep":null},{"name":"Lot - 904 Richmond","land":43119.38,"building":null,"accdep":null},{"name":"Lot - 906 Richmond","land":32778.06,"building":null,"accdep":null},{"name":"Lot - 914 Richmond","land":422.24,"building":null,"accdep":null},{"name":"Lot - next to McDonough Toyota Used","land":77391.76,"building":null,"accdep":null},{"name":"Lot - Powell St.","land":35149.6,"building":null,"accdep":null}],"not_relevant":[{"name":"Center - 210 N Central Ave / 211 N Lewis St","extra":""},{"name":"Center - 213 N Lewis St","extra":""},{"name":"House - 72 Young St.","extra":""},{"name":"Building - 110 W Beverly St.","extra":""},{"name":"FPT - Habitat Warehouse - Garage/Harner","extra":""},{"name":"Dahl - Woodlee Barn","extra":""},{"name":"Lot - behind Goodwill-Staunton","extra":""},{"name":"Center - Genesis Parking Lot","extra":""},{"name":"Center - 1854 E Market Lot in Back","extra":""},{"name":"Building - Flow Back Lot","extra":""},{"name":"Lot - behind Starbucks Woodstock - 2 Lots","extra":""},{"name":"Lot - behind Genesis 1","extra":""},{"name":"Lot - behind Genesis 2","extra":""},{"name":"Lot - Eiland, Partial 11","extra":""},{"name":"FPT - Habitat Warehouse - Lot","extra":""},{"name":"Lot - behind Old Ray Carr, HD Rev Trust Landlocked (Augusta Parcel 055 80)","extra":""},{"name":"Lot - behind O'baugh Ford - Augusta Lot 2 (Old Greenville Rd. Parcel 055 80G)","extra":""},{"name":"Lot - Eiland, Partial 4 (1009 Alta St.)","extra":""},{"name":"Lot - Eiland, Partial 5 (1011 Alta St.)","extra":""},{"name":"Dahl - Conservation Easement - Track 2 (793 Statler Blvd)","extra":"conservation easement, owning party \"Dahl\" (family, not a specific LLC)"},{"name":"Dahl - Conservation Easement - Track 1 (806 Hunter Ave)","extra":"conservation easement, same note"}],"not_included":[{"name":"Building - Tita Sales (61 Lee Jackson Hwy)"},{"name":"Building - 713 N Augusta St (FPT LLC, vacant)"},{"name":"Land - 2110 Seminole Trail (Dulaney) (TAP)"},{"name":"Land - 0 India Rd./Hillsdale Drive (Charlottesville) - Vacant land"},{"name":"Land - 1936 Medical Avenue (Harrisonburg) - Vacant land"},{"name":"Land - 1935 Deyerle Avenue (Harrisonburg) - Vacant land"},{"name":"Land - Windigrove Country Club Lot (Waynesboro) - Vacant land"}]};
-const ADDRESS_LOOKUP = {"Building - Honda Auto Body shop/Swartz":"2675 S Main St., Harrisonburg, VA 22801","Center - 2655 S Main St. Hburg":"2655 S Main St., Harrisonburg, VA 22801","Building - Flow Back Lot":"1321 Stoney Point Rd, Charlotesville, VA 22903","Lot - behind Goodwill-Staunton":"312 Mary Gray Ln, Staunton, VA 24401","Building - Old Planters LLC":"115 Lee Jackson Hwy, Staunton, VA 24401","Center - 213 N Lewis St":"Staunton, VA 24401","Building - Flow Corner":"1289 Stoney Point Rd, Charlotesville, VA 22903","Building - Wells Property/Bookstore":"707 Richmond Ave, Staunton, VA 24401","Center - 210 N Central Ave / 211 N Lewis St":"Staunton, VA 24401","Center - Tire Mart":"1027 Richmond Ave, Staunton, VA 24401","Center - 1854 E Market St":"1854 E Market St., Harrisonburg, VA 22801","House - 76 Young St.":"76 Young St., Staunton, VA 24401","Lot - next to Hoy Center 3":"803 Richmond Ave, Stuanton, VA 24401","Building & Bays - 808 Richmond":"808 Richmond Ave, Staunton, VA 24401","Center - Sunnyside":"105 Lee Jackson Highway, Staunton, VA 24401","Center - Log Lot":"49 Lee Jackson Highway, Staunton, VA 24401","Lot - Pole Lot":"1213 Richmond Ave, Staunton, VA 24401","Lot - behind Subaru/Old Ray Car, GCS":"Augusta Parcel 055 78A, Staunton, VA 24401","Lot - 4.977 acres Windigrove, Waynesboro":"4.977 acres, back lot on Windigrove, Waynesboro, VA 22980","Dahl - Payne House":"42 Payne Lane, Staunton, VA 24401","Lot - Windigrove, Waynesboro":"0 Windigrove Dr., Waynesboro, VA 22980","Lot - Eiland, Partial 10":"1008 Richmond Ave, Staunton, VA 24401","Lot - Eiland, Partial 2":"1005 Alta St., Staunton, VA 24401","Center - 1854 E Market Lot in Back":"22 Terri Drive, Harrisonburg, VA 22801","Lot - Eiland, Partial 7":"1002 Richmond Ave, Staunton, VA 24401","Lot - 904 Richmond":"904 Richmond Ave, Staunton, VA 24401","Lot - next to Hoy Center 1":"723 Richmond Ave., Staunton, VA 24401","Lot - by Chipotle Center/Longhorn":"106 Crossing Way, Staunton, VA 24401","Lot - 914 Richmond":"914 Richmond Ave, Staunton, VA 24401","Lot - behind Starbucks Woodstock - 2 Lots":"1025 Woodstock Commons Drive, Woodstock, VA 22664","Lot - Eiland, Partial 9":"1006 Richmond Ave, Staunton, VA 24401","Lot - 906 Richmond":"906 Richmond Ave, Staunton, VA 24401","FPT - Habitat Warehouse - Building":"434 Richmond Ave, Staunton, VA 24401","Center - Heritage building":"2815-2817 N Augusta St., Staunton, VA 24401","Lot - next to Outback 1":"24 Windigrove, Waynesboro, VA 22980","Lot - next to Thomas's Staunton house":"10 Trace Dr., Staunton, VA 24401","Lot - behind Subaru/Old Ray Car, DDC":"Augusta Parcel 055 78, Staunton, VA 24401","Lot - Eiland, Partial 3":"1007 Alta St., Staunton, VA 24401","Center - Elliott":"1100 Greenville Ave, Staunton, VA 24401","GAE - Nags Head House":"1223 S Va Dare Trail, Kill Devil Hills, NC 27948","Lot - behind Bills TV 1":"702 De Jarnette Ave, Staunton, VA 24401","Lot - behind Bills TV 3":"670 Statler Ave, Stuanton, VA 24401","Lot - behind Hoy Center- Crawford lot":"886 Jones St., Staunton, VA 24401","Building - Caliber":"1720 Seminole Trail, Charlottesville, VA 22903","Building - 802 Richmond (Dahl Invest)":"802 Richmond Ave, Staunton, VA 24401","Center - Genesis":"823 Richmond Ave, Stuanton, VA 24401","Lot - Storage Lot O'baugh Ford - Augusta Lot 1":"11 Orchard Hill Square, Staunton, VA 24401","Building - F&M Bank":"2813 N Augusta St., Staunton, VA 24401","House - 72 Young St.":"72 Young St., Staunton, VA 24401","Lot - Hunter Ave Properties":"Hunter Ave, Stuanton, VA 24401","Center - Verona":"465/485 Lee Hwy, Verona, VA 24482","Lot - 801 Hunter Ave":"801 Hunter Ave, Staunton, VA 24401","GAE - Smith Mountain Lake House":"180 Peninsula Pt., Moneta, VA 24121","Lot - 3 Acres off of Statler Blvd/Hunter Ave":"Statler Blvd/Hunter Ave, Stuanton, VA 24401","House - 304 Powell St.":"304 Powell St., Staunton, VA 24401","Lot - behind Genesis 2":"208 National Ave, Stuanton, VA 24401","Lot - behind 808 Richmond Building 1":"730 De Jarnette Ave, Staunton, VA 24401","Lot - Eiland, Partial 1":"1001 Alta St., Staunton, VA 24401","FPT - Habitat Warehouse - Lot":"450 Richmond Ave, Staunton, VA 24401","Center - Genesis Parking Lot":"825 Richmond Ave, Stuanton, VA 24401","Lot - Eiland, Partial 6":"115 Bell St., Staunton, VA 24401","Lot - McDonough Toyota ground lease, DDC (2 lots)":"1007, 1009 Richmond Rd, Staunton, VA 24401","Lot - next to Outback 2":"36 Windigrove, Waynesboro, VA 22980","Dahl - Woodlee Barn":"41 A Woodlee Rd, Staunton, VA 24401","Building - Log Lot - Old Cash Advance":"61 Lee Jackson Highway, Staunton, VA 24401","Lot - behind Bills TV 2":"668 Statler Ave, Stuanton, VA 24401","Lot - Powell St.":"302 Powell St., Staunton, VA 24401","Lot - behind 808 Richmond Building 2":"802 Hunter Ave, Staunton, VA 24401","Dahl - Woodlee House (GAE)":"41 Woodlee Rd, Staunton, VA 24401","Lot - Arehart (Part of Pole Lot Development)":"1211 Richmond Ave, Staunton, VA 24401","Lot - 804 Hunter behind 808 Richmond":"804 Hunter Ave, Staunton, VA 24401","Lot - next to McDonough Toyota Used":"818 Richmond Ave, Staunton, VA 24401","Building - Office NDEP":"2903 N Augusta St., Staunton, VA 24401","Center - Gander":"440 Gander Drive, Charlottesville, VA 22903","Building - 110 W Beverly St.":"110 W Beverly St., Staunton, VA 24401","House - 337 Lancaster Ave":"337 Lancaster Ave, Staunton, VA 24401","FPT - Habitat Warehouse - Garage/Harner":"480 Richmond Ave, Staunton, VA 24401","Lot - next to Hoy Center 2":"801 Richmond Ave, Stuanton, VA 24401","Lot - Eiland, Partial 11":"1012 Richmond Ave, Staunton, VA 24401","Lot - behind Genesis 1":"204 National Ave, Stuanton, VA 24401","Lot - behind Hoy Center":"880 Jones St., Staunton, VA 24401","Lot - behind O'baugh Ford - 2 Staunton Lots":"337 & 337A Old Greenville Rd, Staunton, VA 24401","House - 910 Richmond":"910 Richmond Ave, Staunton, VA 24401","Center - Hoy":"729 Richmond Ave, Staunton, VA 24401","Lot - Staunton Crossing Back":"399 Crossing Way, Staunton, VA 24401","Lot - Eiland, Partial 8":"1004 Richmond Ave, Staunton, VA 24401","Building - Flow Center Lot":"1311 Stoney Point Rd, Charlotesville, VA 22903","Center - 143/153 Crown Drive":"Danville, VA 24540"};
-</script>
-
-<script>
 (function(){
 
   // ---------- Utility functions ----------
@@ -754,30 +768,60 @@ const ADDRESS_LOOKUP = {"Building - Honda Auto Body shop/Swartz":"2675 S Main St
 
   function deepCopy(x){ return JSON.parse(JSON.stringify(x)); }
 
+  // ---------- API helpers ----------
+  // Everything here talks to the /api/properties serverless functions, which
+  // read/write the Postgres database. The table is created and seeded on the
+  // server side the first time it's used (see lib/ensureSeeded.js) — nothing
+  // to run by hand.
+  async function apiFetch(path, options){
+    const res = await fetch(path, options);
+    let body = null;
+    try { body = await res.json(); } catch (e) { /* no body */ }
+    if (!res.ok){
+      throw new Error((body && body.error) || ('Request failed (' + res.status + ')'));
+    }
+    return body;
+  }
+  const api = {
+    list: () => apiFetch('/api/properties'),
+    create: (payload) => apiFetch('/api/properties', {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    }),
+    update: (id, fields) => apiFetch('/api/properties/' + id, {
+      method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(fields)
+    }),
+    remove: (id) => apiFetch('/api/properties/' + id, { method: 'DELETE' }),
+  };
+
   // ---------- Period data model ----------
+  // The "May 2026" period is the live, database-backed set of records.
+  // Any additional periods loaded via CSV (see "+ Add period") are session-only
+  // comparison snapshots, same as before — they are never sent to the server.
+  const LIVE_PERIOD = 'May 2026';
   let periods = {};
   let periodOrder = [];
 
-  function makePeriod(label, rawArray){
+  function makePeriod(label, rawArray, opts){
+    const persisted = !!(opts && opts.persisted);
     const basis = rawArray.map((p, i) => {
-      const item = { _id: label + '__' + i, name: p.name, land: p.land, building: p.building, accdep: p.accdep, basis: 0, notes: '' };
+      const item = { _id: persisted ? String(p.id) : (label + '__' + i), name: p.name, land: p.land, building: p.building, accdep: p.accdep, address: p.address || null, basis: 0, notes: '' };
       recompute(item);
       return item;
     });
     periods[label] = {
       basis: basis,
       original: deepCopy(basis),
-      originalMap: null
+      originalMap: null,
+      persisted: persisted,
     };
     periods[label].originalMap = new Map(periods[label].original.map(x => [x._id, x]));
     periodOrder.push(label);
   }
 
-  makePeriod('May 2026', SITE_DATA.basis_raw);
-  let currentPeriod = 'May 2026';
-
-  const notRelevant = SITE_DATA.not_relevant;
-  const notIncluded = SITE_DATA.not_included;
+  let currentPeriod = LIVE_PERIOD;
+  let notRelevant = [];
+  let notIncluded = [];
+  let addressByName = {};
 
   function currentBasis(){ return periods[currentPeriod].basis; }
   function findItem(id){ return currentBasis().find(x => x._id === id); }
@@ -832,6 +876,9 @@ const ADDRESS_LOOKUP = {"Building - Honda Auto Body shop/Swartz":"2675 S Main St
   let sortDir = 1;
   let expandedRow = null;
   let addPeriodOpen = false;
+  let addPropertyOpen = false;
+  let addNotRelevantOpen = false;
+  let addNotIncludedOpen = false;
 
   const filters = [
     { id:'all', label:'All properties' },
@@ -893,6 +940,7 @@ const ADDRESS_LOOKUP = {"Building - Honda Auto Body shop/Swartz":"2675 S Main St
           ${periodOrder.map(label => `<button class="period-pill ${label===currentPeriod?'active':''}" data-period="${label}">${label}<span class="pcount">${periods[label].basis.length}</span></button>`).join('')}
         </div>
         <div class="period-actions">
+          ${periods[currentPeriod].persisted ? `<button class="ghost-btn" id="addPropertyBtn">+ Add property</button>` : ''}
           <button class="ghost-btn" id="addPeriodBtn">+ Add period</button>
           <button class="ghost-btn" id="exportSnapshotBtn">Export snapshot</button>
           <button class="ghost-btn" id="importSnapshotBtn">Import snapshot</button>
@@ -900,6 +948,17 @@ const ADDRESS_LOOKUP = {"Building - Honda Auto Body shop/Swartz":"2675 S Main St
           ${hasEdits ? `<button class="ghost-btn warn" id="resetEditsBtn">Reset edits (${currentPeriod})</button>` : ''}
         </div>
       </div>
+      ${periods[currentPeriod].persisted ? `
+      <div class="add-period-panel" id="addPropertyPanel" style="display:${addPropertyOpen?'flex':'none'}">
+        <input type="text" id="propNameInput" placeholder="Property name">
+        <input type="text" inputmode="decimal" id="propLandInput" placeholder="Land">
+        <input type="text" inputmode="decimal" id="propBuildingInput" placeholder="Building">
+        <input type="text" inputmode="decimal" id="propAccdepInput" placeholder="Accum. Dep.">
+        <button class="ghost-btn" id="saveNewPropertyBtn">Add</button>
+        <button class="ghost-btn" id="cancelNewPropertyBtn">Cancel</button>
+        <div class="panel-error" id="addPropertyError"></div>
+      </div>
+      ` : ''}
       <div class="add-period-panel" id="addPeriodPanel" style="display:${addPeriodOpen?'flex':'none'}">
         <input type="text" id="periodLabelInput" placeholder="Period label (e.g., June 2026 or Q3 2026)">
         <input type="file" id="periodFileInput" accept=".csv">
@@ -953,7 +1012,7 @@ const ADDRESS_LOOKUP = {"Building - Honda Auto Body shop/Swartz":"2675 S Main St
       tbody.innerHTML = rows.map((p) => {
         const key = p._id;
         const isOpen = expandedRow === key;
-        const address = ADDRESS_LOOKUP[p.name];
+        const address = p.address || addressByName[p.name];
         return `
         <tr class="${p._markType==='review'?'flagged':''}" data-key="${key}">
           <td class="name-cell"${address?` title="${address.replace(/"/g,'&quot;')}"`:''}>${markHTML(p._markType)}<span class="name-text${address?' has-address':''}">${p.name}</span></td>
@@ -974,6 +1033,7 @@ const ADDRESS_LOOKUP = {"Building - Honda Auto Body shop/Swartz":"2675 S Main St
               </div>
               ${p.notes ? `<div class="notebox ${p._markType==='land'||p._markType==='building'?'neutral':''}">${p.notes}</div>` : ''}
               <div class="edit-hint">Click any Land, Building, or Accum. Dep. value above to edit it — Basis recalculates automatically.</div>
+              ${periods[currentPeriod].persisted ? `<button class="ghost-btn warn delete-property-btn" data-delete-id="${p._id}" style="margin-top:10px">Delete this property</button>` : ''}
             </div>
           </td>
         </tr>
@@ -1031,11 +1091,47 @@ const ADDRESS_LOOKUP = {"Building - Honda Auto Body shop/Swartz":"2675 S Main St
     const loadBtn = document.getElementById('loadPeriodBtn');
     if (loadBtn) loadBtn.addEventListener('click', ()=> handleLoadPeriod(container));
 
-    // Reset edits
-    const resetBtn = document.getElementById('resetEditsBtn');
-    if (resetBtn) resetBtn.addEventListener('click', ()=>{
-      periods[currentPeriod].basis = deepCopy(periods[currentPeriod].original);
+    // Add property (only offered on the live, database-backed period)
+    const addPropertyBtn = document.getElementById('addPropertyBtn');
+    if (addPropertyBtn) addPropertyBtn.addEventListener('click', ()=>{
+      addPropertyOpen = !addPropertyOpen;
       renderBasisPanel(container);
+    });
+    const cancelPropertyBtn = document.getElementById('cancelNewPropertyBtn');
+    if (cancelPropertyBtn) cancelPropertyBtn.addEventListener('click', ()=>{
+      addPropertyOpen = false;
+      renderBasisPanel(container);
+    });
+    const savePropertyBtn = document.getElementById('saveNewPropertyBtn');
+    if (savePropertyBtn) savePropertyBtn.addEventListener('click', ()=> handleAddProperty(container));
+
+    // Reset edits — reverts every edited value back to what was originally
+    // loaded, both on screen and (for the live period) in the database.
+    const resetBtn = document.getElementById('resetEditsBtn');
+    if (resetBtn) resetBtn.addEventListener('click', async ()=>{
+      const per = periods[currentPeriod];
+      if (!per.persisted){
+        per.basis = deepCopy(per.original);
+        renderBasisPanel(container);
+        return;
+      }
+      const edited = per.basis.filter(item => {
+        const o = per.originalMap.get(item._id);
+        return o && (o.land !== item.land || o.building !== item.building || o.accdep !== item.accdep);
+      });
+      resetBtn.disabled = true;
+      resetBtn.textContent = 'Reverting…';
+      try {
+        for (const item of edited){
+          const o = per.originalMap.get(item._id);
+          await api.update(item._id, { land: o.land, building: o.building, accdep: o.accdep });
+        }
+        per.basis = deepCopy(per.original);
+        renderBasisPanel(container);
+      } catch (err){
+        alert('Could not reset all edits: ' + err.message);
+        renderBasisPanel(container);
+      }
     });
 
     // Export / import snapshot
@@ -1045,9 +1141,15 @@ const ADDRESS_LOOKUP = {"Building - Honda Auto Body shop/Swartz":"2675 S Main St
     });
     document.getElementById('importSnapshotFile').addEventListener('change', (e)=> handleImportSnapshot(e, container));
 
-    // Row expand + inline editing (event delegation)
+    // Row expand + inline editing + delete (event delegation)
     const tbody = document.getElementById('basisBody');
     tbody.addEventListener('click', (e)=>{
+      const delBtn = e.target.closest('.delete-property-btn');
+      if (delBtn){
+        e.stopPropagation();
+        handleDeleteProperty(delBtn.dataset.deleteId, container);
+        return;
+      }
       const cell = e.target.closest('td.editable');
       if (cell){
         e.stopPropagation();
@@ -1062,6 +1164,51 @@ const ADDRESS_LOOKUP = {"Building - Honda Auto Body shop/Swartz":"2675 S Main St
         renderBasisPanel(container);
       }
     });
+  }
+
+  async function handleAddProperty(container){
+    const errorBox = document.getElementById('addPropertyError');
+    errorBox.textContent = '';
+    const name = document.getElementById('propNameInput').value.trim();
+    if (!name){ errorBox.textContent = 'Enter a property name.'; return; }
+    const land = parseNumber(document.getElementById('propLandInput').value);
+    const building = parseNumber(document.getElementById('propBuildingInput').value);
+    let accdep = parseNumber(document.getElementById('propAccdepInput').value);
+    if (accdep !== null) accdep = Math.abs(accdep);
+    const saveBtn = document.getElementById('saveNewPropertyBtn');
+    saveBtn.disabled = true;
+    try {
+      const created = await api.create({ category: 'basis', name, land, building, accdep });
+      const per = periods[currentPeriod];
+      const item = { _id: String(created.id), name: created.name, land: created.land, building: created.building, accdep: created.accdep, address: created.address || null, basis: 0, notes: '' };
+      recompute(item);
+      per.basis.push(item);
+      const orig = deepCopy(item);
+      per.original.push(orig);
+      per.originalMap.set(item._id, orig);
+      addPropertyOpen = false;
+      renderBasisPanel(container);
+    } catch (err){
+      errorBox.textContent = 'Could not add property: ' + err.message;
+      saveBtn.disabled = false;
+    }
+  }
+
+  async function handleDeleteProperty(id, container){
+    const item = findItem(id);
+    if (!item) return;
+    if (!confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
+    try {
+      await api.remove(id);
+      const per = periods[currentPeriod];
+      per.basis = per.basis.filter(x => x._id !== id);
+      per.original = per.original.filter(x => x._id !== id);
+      per.originalMap.delete(id);
+      if (expandedRow === id) expandedRow = null;
+      renderBasisPanel(container);
+    } catch (err){
+      alert('Could not delete property: ' + err.message);
+    }
   }
 
   function startEdit(cell, container){
@@ -1080,9 +1227,19 @@ const ADDRESS_LOOKUP = {"Building - Honda Auto Body shop/Swartz":"2675 S Main St
       committed = true;
       let val = parseNumber(input.value);
       if (field === 'accdep' && val !== null) val = Math.abs(val);
+      const prevVal = item[field];
       item[field] = val;
       recompute(item);
       renderBasisPanel(container);
+      if (val === prevVal) return;
+      if (periods[currentPeriod].persisted){
+        api.update(item._id, { [field]: val }).catch(err => {
+          alert('Could not save change: ' + err.message + ' — reverting.');
+          item[field] = prevVal;
+          recompute(item);
+          renderBasisPanel(container);
+        });
+      }
     }
     input.addEventListener('blur', commit);
     input.addEventListener('keydown', (ev)=>{
@@ -1178,6 +1335,16 @@ const ADDRESS_LOOKUP = {"Building - Honda Auto Body shop/Swartz":"2675 S Main St
   function renderNotRelevantPanel(container){
     container.innerHTML = `
       <div class="info-banner">These properties have no Land, Building, or Accumulated Depreciation account in their Yardi trial balance, so they're excluded from the basis calculation.</div>
+      <div class="period-actions" style="margin-bottom:12px">
+        <button class="ghost-btn" id="addNotRelevantBtn">+ Add</button>
+      </div>
+      <div class="add-period-panel" id="addNotRelevantPanel" style="display:${addNotRelevantOpen?'flex':'none'}">
+        <input type="text" id="nrNameInput" placeholder="Property name">
+        <input type="text" id="nrExtraInput" placeholder="Note (optional)">
+        <button class="ghost-btn" id="saveNotRelevantBtn">Add</button>
+        <button class="ghost-btn" id="cancelNotRelevantBtn">Cancel</button>
+        <div class="panel-error" id="addNotRelevantError"></div>
+      </div>
       <div class="simplelist" id="nrList"></div>
     `;
     const list = document.getElementById('nrList');
@@ -1185,23 +1352,127 @@ const ADDRESS_LOOKUP = {"Building - Honda Auto Body shop/Swartz":"2675 S Main St
     const rows = notRelevant.filter(p => !q || p.name.toLowerCase().includes(q) || (p.extra||'').toLowerCase().includes(q));
     list.innerHTML = rows.length ? rows.map(p => `
       <div class="row">
-        <span>${p.name}</span>
-        ${p.extra ? `<span class="extra">${p.extra}</span>` : ''}
+        <div class="row-main">
+          <span>${p.name}</span>
+          ${p.extra ? `<span class="extra">${p.extra}</span>` : ''}
+        </div>
+        <button class="row-delete" data-id="${p._id}" title="Delete">×</button>
       </div>
     `).join('') : `<div class="empty">No matches.</div>`;
+
+    document.getElementById('addNotRelevantBtn').addEventListener('click', ()=>{
+      addNotRelevantOpen = !addNotRelevantOpen;
+      renderNotRelevantPanel(container);
+    });
+    const cancelBtn = document.getElementById('cancelNotRelevantBtn');
+    if (cancelBtn) cancelBtn.addEventListener('click', ()=>{
+      addNotRelevantOpen = false;
+      renderNotRelevantPanel(container);
+    });
+    const saveBtn = document.getElementById('saveNotRelevantBtn');
+    if (saveBtn) saveBtn.addEventListener('click', async ()=>{
+      const errorBox = document.getElementById('addNotRelevantError');
+      errorBox.textContent = '';
+      const name = document.getElementById('nrNameInput').value.trim();
+      if (!name){ errorBox.textContent = 'Enter a property name.'; return; }
+      const extra = document.getElementById('nrExtraInput').value.trim();
+      saveBtn.disabled = true;
+      try {
+        const created = await api.create({ category: 'not_relevant', name, extra: extra || null });
+        notRelevant.push({ _id: String(created.id), name: created.name, extra: created.extra || '' });
+        addNotRelevantOpen = false;
+        renderTabs();
+        renderNotRelevantPanel(container);
+      } catch (err){
+        errorBox.textContent = 'Could not add: ' + err.message;
+        saveBtn.disabled = false;
+      }
+    });
+    list.querySelectorAll('.row-delete').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.dataset.id;
+        const item = notRelevant.find(x => x._id === id);
+        if (!item) return;
+        if (!confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
+        try {
+          await api.remove(id);
+          notRelevant = notRelevant.filter(x => x._id !== id);
+          renderTabs();
+          renderNotRelevantPanel(container);
+        } catch (err){
+          alert('Could not delete: ' + err.message);
+        }
+      });
+    });
   }
 
   function renderNotIncludedPanel(container){
     container.innerHTML = `
       <div class="info-banner">These properties are on Ben's master property list but could not be found in Yardi.</div>
+      <div class="period-actions" style="margin-bottom:12px">
+        <button class="ghost-btn" id="addNotIncludedBtn">+ Add</button>
+      </div>
+      <div class="add-period-panel" id="addNotIncludedPanel" style="display:${addNotIncludedOpen?'flex':'none'}">
+        <input type="text" id="niNameInput" placeholder="Property name">
+        <button class="ghost-btn" id="saveNotIncludedBtn">Add</button>
+        <button class="ghost-btn" id="cancelNotIncludedBtn">Cancel</button>
+        <div class="panel-error" id="addNotIncludedError"></div>
+      </div>
       <div class="simplelist" id="niList"></div>
     `;
     const list = document.getElementById('niList');
     const q = searchTerm.trim().toLowerCase();
     const rows = notIncluded.filter(p => !q || p.name.toLowerCase().includes(q));
     list.innerHTML = rows.length ? rows.map(p => `
-      <div class="row"><span>${p.name}</span></div>
+      <div class="row">
+        <div class="row-main"><span>${p.name}</span></div>
+        <button class="row-delete" data-id="${p._id}" title="Delete">×</button>
+      </div>
     `).join('') : `<div class="empty">No matches.</div>`;
+
+    document.getElementById('addNotIncludedBtn').addEventListener('click', ()=>{
+      addNotIncludedOpen = !addNotIncludedOpen;
+      renderNotIncludedPanel(container);
+    });
+    const cancelBtn = document.getElementById('cancelNotIncludedBtn');
+    if (cancelBtn) cancelBtn.addEventListener('click', ()=>{
+      addNotIncludedOpen = false;
+      renderNotIncludedPanel(container);
+    });
+    const saveBtn = document.getElementById('saveNotIncludedBtn');
+    if (saveBtn) saveBtn.addEventListener('click', async ()=>{
+      const errorBox = document.getElementById('addNotIncludedError');
+      errorBox.textContent = '';
+      const name = document.getElementById('niNameInput').value.trim();
+      if (!name){ errorBox.textContent = 'Enter a property name.'; return; }
+      saveBtn.disabled = true;
+      try {
+        const created = await api.create({ category: 'not_included', name });
+        notIncluded.push({ _id: String(created.id), name: created.name });
+        addNotIncludedOpen = false;
+        renderTabs();
+        renderNotIncludedPanel(container);
+      } catch (err){
+        errorBox.textContent = 'Could not add: ' + err.message;
+        saveBtn.disabled = false;
+      }
+    });
+    list.querySelectorAll('.row-delete').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.dataset.id;
+        const item = notIncluded.find(x => x._id === id);
+        if (!item) return;
+        if (!confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
+        try {
+          await api.remove(id);
+          notIncluded = notIncluded.filter(x => x._id !== id);
+          renderTabs();
+          renderNotIncludedPanel(container);
+        } catch (err){
+          alert('Could not delete: ' + err.message);
+        }
+      });
+    });
   }
 
   // ---------- Compare panel ----------
@@ -1380,8 +1651,46 @@ const ADDRESS_LOOKUP = {"Building - Honda Auto Body shop/Swartz":"2675 S Main St
     }
   }
 
-  renderTabs();
-  renderPanel();
+  // ---------- Boot ----------
+  function renderLoading(){
+    document.getElementById('panelArea').innerHTML = `<div class="empty">Loading property records…</div>`;
+  }
+
+  function renderLoadError(message, retry){
+    document.getElementById('panelArea').innerHTML = `
+      <div class="add-period-panel" style="display:flex">
+        <div class="panel-error" style="margin-bottom:0">Could not load property records: ${message}</div>
+        <button class="ghost-btn" id="retryLoadBtn">Retry</button>
+      </div>
+    `;
+    document.getElementById('retryLoadBtn').addEventListener('click', retry);
+  }
+
+  async function boot(){
+    renderLoading();
+    try {
+      const data = await api.list();
+      periods = {};
+      periodOrder = [];
+      makePeriod(LIVE_PERIOD, data.basis, { persisted: true });
+      currentPeriod = LIVE_PERIOD;
+      notRelevant = data.not_relevant.map(r => ({ _id: String(r.id), name: r.name, extra: r.extra || '' }));
+      notIncluded = data.not_included.map(r => ({ _id: String(r.id), name: r.name }));
+      // Name -> address fallback, so addresses still show up for any
+      // CSV-loaded comparison period whose property names match the database
+      // (matching the old behavior of the global ADDRESS_LOOKUP table).
+      addressByName = {};
+      [...data.basis, ...data.not_relevant, ...data.not_included].forEach(r => {
+        if (r.address) addressByName[r.name] = r.address;
+      });
+      renderTabs();
+      renderPanel();
+    } catch (err){
+      renderLoadError(err.message, boot);
+    }
+  }
+
+  boot();
 
 })();
 </script>
