@@ -219,6 +219,21 @@
     flex-shrink:0;
   }
 
+  .title-home-btn{
+    display:block;
+    text-align:left;
+    background:none;
+    border:none;
+    padding:0;
+    margin:0;
+    font:inherit;
+    color:inherit;
+    cursor:pointer;
+    border-radius: 3px;
+  }
+  .title-home-btn:hover h1{ color: var(--sage-deep); }
+  .title-home-btn:focus-visible{ outline: 2px solid var(--sage-deep); outline-offset: 4px; }
+
   h1{
     font-family:'Fraunces', serif;
     font-optical-sizing: auto;
@@ -801,10 +816,10 @@
         </a>
       </div>
       <div class="title-divider" aria-hidden="true"></div>
-      <div>
+      <button type="button" class="title-home-btn" id="titleHomeBtn" aria-label="Back to overview">
         <h1>Property Basis Record</h1>
         <div class="subtitle">Land, Building &amp; Accumulated Depreciation</div>
-      </div>
+      </button>
     </div>
     <div class="header-actions">
       <a class="dashboard-hub-link" href="https://dashboard-hub-one-vert.vercel.app/">
@@ -1009,6 +1024,14 @@
   // ---------- Tabs ----------
   let activeTab = 'basis';
   const tabbar = document.getElementById('tabbar');
+
+  function goToOverview(){
+    activeTab = 'basis';
+    searchTerm=''; expandedRow=null; sortCol=null; activeFilter='all';
+    renderTabs();
+    renderPanel();
+  }
+  document.getElementById('titleHomeBtn').addEventListener('click', goToOverview);
 
   function tabDefs(){
     return [
