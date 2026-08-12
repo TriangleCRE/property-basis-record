@@ -845,6 +845,7 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script>
 (function(){
 
@@ -1132,8 +1133,8 @@
         <div class="period-actions">
           ${periods[currentPeriod].persisted ? `<button class="ghost-btn" id="addPropertyBtn">+ Add property</button>` : ''}
           <button class="ghost-btn" id="addPeriodBtn">+ Add period</button>
-          <button class="ghost-btn" id="exportSnapshotBtn">Export snapshot</button>
-          <button class="ghost-btn" id="importSnapshotBtn">Import snapshot</button>
+          <button class="ghost-btn" id="exportSnapshotBtn" title="Download a formatted Excel workbook of the full dashboard">Export snapshot (Excel)</button>
+          <button class="ghost-btn" id="importSnapshotBtn" title="Load a previously saved JSON comparison snapshot">Import snapshot</button>
           <input type="file" id="importSnapshotFile" accept="application/json" style="display:none">
           ${hasEdits ? `<button class="ghost-btn warn" id="resetEditsBtn">Reset edits (${currentPeriod})</button>` : ''}
         </div>
@@ -1480,20 +1481,325 @@
     reader.readAsText(file);
   }
 
-  function exportSnapshot(){
-    const payload = { periodOrder, periods: {} };
-    periodOrder.forEach(label => {
-      payload.periods[label] = { basis: periods[label].basis.map(({_id, ...rest}) => rest) };
+  // ---------- Excel snapshot export ----------
+  // Builds a clean, formatted .xlsx workbook (via the ExcelJS library loaded
+  // in <head>) mirroring every tab on the dashboard: an Overview summary,
+  // one Basis Calculation sheet per period, Not Relevant, Not Included, and
+  // (when more than one period exists) a Compare Periods sheet.
+  const XL = {
+    paper: 'FFF1EEE3', ink: 'FF262F27', inkSoft: 'FF5B6259',
+    sage: 'FF6E7A5C', sageDeep: 'FF4E5A40', copper: 'FF9C5A28', copperSoft: 'FFC88B54',
+    review: 'FFA23B2A', reviewSoft: 'FFE9C9BE', slate: 'FF6D7A8C',
+    paperCard: 'FFFAF8F1', white: 'FFFFFFFF',
+  };
+  const XL_CURRENCY_FMT = '"$"#,##0;[Red]("$"#,##0)';
+  const XL_PERCENT_FMT = '+0.0"%";-0.0"%"';
+  const XL_BAND_FILL = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.paperCard } };
+  const XL_STATUS_STYLE = {
+    ok: { fill: 'FFE7EAE1', font: XL.sageDeep },
+    land: { fill: 'FFF3E4D3', font: XL.copper },
+    building: { fill: 'FFE6E9EC', font: XL.slate },
+    review: { fill: XL.reviewSoft, font: XL.review },
+  };
+
+  function xlTitleCell(cell, text){
+    cell.value = text;
+    cell.font = { name: 'IBM Plex Sans', size: 18, bold: true, color: { argb: XL.white } };
+    cell.alignment = { vertical: 'middle' };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.sageDeep } };
+  }
+
+  function xlHeaderRow(row, lastCol){
+    row.height = 20;
+    for (let c = 1; c <= lastCol; c++){
+      const cell = row.getCell(c);
+      cell.font = { bold: true, color: { argb: XL.white } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XL.sage } };
+      cell.alignment = { vertical: 'middle', horizontal: c === 1 ? 'left' : 'center' };
+      cell.border = { bottom: { style: 'thin', color: { argb: XL.sageDeep } } };
+    }
+  }
+
+  function xlSafeSheetName(name){
+    const safe = String(name).replace(/[\\/*?[\]:]/g, '-').trim();
+    return (safe || 'Sheet').slice(0, 31);
+  }
+
+  function xlUniqueSheetName(used, base){
+    let name = xlSafeSheetName(base);
+    let i = 2;
+    while (used.has(name)){
+      const suffix = ` (${i})`;
+      name = xlSafeSheetName(base).slice(0, 31 - suffix.length) + suffix;
+      i++;
+    }
+    used.add(name);
+    return name;
+  }
+
+  function xlSlug(text){
+    return String(text).trim().replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'snapshot';
+  }
+
+  function addOverviewSheet(workbook){
+    const ws = workbook.addWorksheet('Overview', { properties: { tabColor: { argb: XL.sageDeep } } });
+    ws.columns = [{ width: 36 }, { width: 28 }];
+
+    let r = 1;
+    ws.mergeCells(r, 1, r, 2);
+    xlTitleCell(ws.getCell(r, 1), 'Property Basis Record');
+    ws.getRow(r).height = 30;
+    r++;
+
+    ws.mergeCells(r, 1, r, 2);
+    ws.getCell(r, 1).value = 'Triangle Investments — Dashboard Snapshot';
+    ws.getCell(r, 1).font = { italic: true, size: 11, color: { argb: XL.inkSoft } };
+    r += 2;
+
+    [
+      ['Generated', new Date().toLocaleString('en-US')],
+      ['As-of period', currentPeriod],
+      ['Comparison periods included', periodOrder.length > 1 ? periodOrder.join(', ') : 'None'],
+    ].forEach(([label, value]) => {
+      ws.getCell(r, 1).value = label;
+      ws.getCell(r, 1).font = { bold: true, color: { argb: XL.ink } };
+      ws.getCell(r, 2).value = value;
+      r++;
     });
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'property_basis_snapshot.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    r++;
+
+    xlHeaderRow(ws.getRow(r), 2);
+    ws.getCell(r, 1).value = 'Dashboard Metric';
+    ws.getCell(r, 2).value = 'Value';
+    r++;
+
+    const basis = enrichedBasis();
+    const totalBasis = basis.reduce((s,p) => s + (typeof p.basis === 'number' ? p.basis : 0), 0);
+    const stats = [
+      ['Properties Recorded', basis.length, false],
+      ['Total Basis', totalBasis, true],
+      ['Land-Only Parcels', basis.filter(p => p._markType === 'land').length, false],
+      ['Building-Only Parcels', basis.filter(p => p._markType === 'building').length, false],
+      ['Flagged for Review', basis.filter(p => p._markType === 'review').length, false],
+      ['Not Relevant (excluded from basis)', notRelevant.length, false],
+      ['Not Yet in Yardi', notIncluded.length, false],
+    ];
+    stats.forEach(([label, value, isCurrency], i) => {
+      const row = ws.getRow(r);
+      row.getCell(1).value = label;
+      row.getCell(2).value = value;
+      if (isCurrency) row.getCell(2).numFmt = XL_CURRENCY_FMT;
+      if (i % 2 === 1) row.eachCell({ includeEmpty: true }, c => { if (!c.fill) c.fill = XL_BAND_FILL; });
+      r++;
+    });
+    r++;
+
+    ws.mergeCells(r, 1, r, 2);
+    ws.getCell(r, 1).value = 'Basis = Land + Building − Accumulated Depreciation';
+    ws.getCell(r, 1).font = { italic: true, size: 10, color: { argb: XL.inkSoft } };
+  }
+
+  function addBasisSheet(workbook, label, sheetName){
+    const rows = periods[label].basis.map(item => {
+      const c = classify(item.land, item.building, item.notes);
+      return Object.assign({}, item, { _markType: c.type, _markLabel: c.label });
+    });
+    const ws = workbook.addWorksheet(sheetName, {
+      properties: { tabColor: { argb: XL.sage } },
+      views: [{ state: 'frozen', ySplit: 1 }],
+    });
+    ws.columns = [
+      { width: 30 }, { width: 30 }, { width: 16 }, { width: 16 }, { width: 20 }, { width: 16 }, { width: 20 }, { width: 44 },
+    ];
+    const header = ws.getRow(1);
+    ['Property Name','Address','Land','Building','Accum. Depreciation','Basis','Status','Notes'].forEach((h,i) => header.getCell(i+1).value = h);
+    xlHeaderRow(header, 8);
+
+    rows.forEach((item, i) => {
+      const r = i + 2;
+      const row = ws.getRow(r);
+      row.getCell(1).value = item.name;
+      row.getCell(2).value = item.address || addressByName[item.name] || '';
+      row.getCell(3).value = item.land != null ? item.land : null;
+      row.getCell(4).value = item.building != null ? item.building : null;
+      row.getCell(5).value = item.accdep ? -Math.abs(item.accdep) : (item.accdep === 0 ? 0 : null);
+      row.getCell(6).value = { formula: `SUM(C${r}:E${r})` };
+      row.getCell(7).value = item._markLabel;
+      row.getCell(8).value = item.notes || '';
+
+      [3,4,5,6].forEach(c => row.getCell(c).numFmt = XL_CURRENCY_FMT);
+      row.getCell(1).alignment = { vertical: 'top' };
+      row.getCell(2).alignment = { vertical: 'top' };
+      row.getCell(8).alignment = { wrapText: true, vertical: 'top' };
+
+      const style = XL_STATUS_STYLE[item._markType] || XL_STATUS_STYLE.ok;
+      const statusCell = row.getCell(7);
+      statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: style.fill } };
+      statusCell.font = { bold: true, color: { argb: style.font } };
+      statusCell.alignment = { horizontal: 'center', vertical: 'top' };
+
+      if (i % 2 === 1){
+        [1,2,8].forEach(c => { const cell = row.getCell(c); if (!cell.fill) cell.fill = XL_BAND_FILL; });
+      }
+    });
+
+    if (rows.length){
+      const lastDataRow = rows.length + 1;
+      ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: lastDataRow, column: 8 } };
+
+      const totalRow = ws.getRow(lastDataRow + 1);
+      totalRow.getCell(1).value = 'Total';
+      totalRow.getCell(1).font = { bold: true, color: { argb: XL.ink } };
+      totalRow.getCell(3).value = { formula: `SUM(C2:C${lastDataRow})` };
+      totalRow.getCell(4).value = { formula: `SUM(D2:D${lastDataRow})` };
+      totalRow.getCell(5).value = { formula: `SUM(E2:E${lastDataRow})` };
+      totalRow.getCell(6).value = { formula: `SUM(F2:F${lastDataRow})` };
+      [1,3,4,5,6].forEach(c => {
+        const cell = totalRow.getCell(c);
+        cell.font = Object.assign({ bold: true }, c === 1 ? { color: { argb: XL.ink } } : {});
+        cell.border = { top: { style: 'thin', color: { argb: XL.ink } } };
+        if (c !== 1) cell.numFmt = XL_CURRENCY_FMT;
+      });
+    }
+  }
+
+  function addNotRelevantSheet(workbook){
+    const ws = workbook.addWorksheet('Not Relevant', { properties: { tabColor: { argb: XL.copper } } });
+    ws.columns = [{ width: 34 }, { width: 60 }];
+
+    ws.mergeCells(1, 1, 1, 2);
+    ws.getRow(1).height = 32;
+    const banner = ws.getCell(1, 1);
+    banner.value = "These properties have no Land, Building, or Accumulated Depreciation account in their Yardi trial balance, so they're excluded from the basis calculation.";
+    banner.font = { italic: true, color: { argb: XL.inkSoft } };
+    banner.alignment = { wrapText: true, vertical: 'middle' };
+
+    ws.getCell(2, 1).value = 'Property Name';
+    ws.getCell(2, 2).value = 'Note';
+    xlHeaderRow(ws.getRow(2), 2);
+    ws.views = [{ state: 'frozen', ySplit: 2 }];
+
+    notRelevant.forEach((p, i) => {
+      const row = ws.getRow(i + 3);
+      row.getCell(1).value = p.name;
+      row.getCell(2).value = p.extra || '';
+      row.getCell(2).alignment = { wrapText: true };
+      if (i % 2 === 1) row.eachCell({ includeEmpty: true }, c => { if (!c.fill) c.fill = XL_BAND_FILL; });
+    });
+    if (notRelevant.length){
+      ws.autoFilter = { from: { row: 2, column: 1 }, to: { row: notRelevant.length + 2, column: 2 } };
+    }
+  }
+
+  function addNotIncludedSheet(workbook){
+    const ws = workbook.addWorksheet('Not Included', { properties: { tabColor: { argb: XL.slate } } });
+    ws.columns = [{ width: 40 }];
+
+    ws.mergeCells(1, 1, 1, 1);
+    ws.getRow(1).height = 32;
+    const banner = ws.getCell(1, 1);
+    banner.value = "These properties are on Ben's master property list but could not be found in Yardi.";
+    banner.font = { italic: true, color: { argb: XL.inkSoft } };
+    banner.alignment = { wrapText: true, vertical: 'middle' };
+
+    ws.getCell(2, 1).value = 'Property Name';
+    xlHeaderRow(ws.getRow(2), 1);
+    ws.views = [{ state: 'frozen', ySplit: 2 }];
+
+    notIncluded.forEach((p, i) => {
+      const row = ws.getRow(i + 3);
+      row.getCell(1).value = p.name;
+      if (i % 2 === 1) row.getCell(1).fill = XL_BAND_FILL;
+    });
+    if (notIncluded.length){
+      ws.autoFilter = { from: { row: 2, column: 1 }, to: { row: notIncluded.length + 2, column: 1 } };
+    }
+  }
+
+  function addComparePeriodsSheet(workbook){
+    const labelA = (compareA && periods[compareA]) ? compareA : periodOrder[0];
+    const labelB = (compareB && periods[compareB] && compareB !== labelA) ? compareB : (periodOrder.find(l => l !== labelA) || periodOrder[0]);
+    const rows = buildComparison(labelA, labelB).slice().sort((a,b) => {
+      const av = typeof a.delta === 'number' ? a.delta : -Infinity;
+      const bv = typeof b.delta === 'number' ? b.delta : -Infinity;
+      return bv - av;
+    });
+
+    const ws = workbook.addWorksheet('Compare Periods', {
+      properties: { tabColor: { argb: XL.copperSoft } },
+      views: [{ state: 'frozen', ySplit: 1 }],
+    });
+    ws.columns = [{ width: 30 }, { width: 18 }, { width: 18 }, { width: 16 }, { width: 14 }, { width: 20 }];
+    const header = ws.getRow(1);
+    ['Property Name', `Basis (${labelA})`, `Basis (${labelB})`, 'Change ($)', 'Change (%)', 'Status'].forEach((h,i) => header.getCell(i+1).value = h);
+    xlHeaderRow(header, 6);
+
+    rows.forEach((rec, i) => {
+      const row = ws.getRow(i + 2);
+      row.getCell(1).value = rec.name;
+      row.getCell(2).value = rec.basisA != null ? rec.basisA : null;
+      row.getCell(3).value = rec.basisB != null ? rec.basisB : null;
+      row.getCell(4).value = rec.delta != null ? rec.delta : null;
+      row.getCell(5).value = rec.deltaPct != null ? rec.deltaPct : null;
+      row.getCell(6).value = rec.status === 'onlyA' ? `Not in ${labelB}` : (rec.status === 'onlyB' ? `Not in ${labelA}` : 'In both periods');
+
+      [2,3,4].forEach(c => row.getCell(c).numFmt = XL_CURRENCY_FMT);
+      row.getCell(5).numFmt = XL_PERCENT_FMT;
+      if (typeof rec.delta === 'number' && rec.delta !== 0){
+        const color = rec.delta > 0 ? XL.sageDeep : XL.review;
+        row.getCell(4).font = { color: { argb: color } };
+        row.getCell(5).font = { color: { argb: color } };
+      }
+      if (i % 2 === 1) row.eachCell({ includeEmpty: true }, c => { if (!c.fill) c.fill = XL_BAND_FILL; });
+    });
+    if (rows.length){
+      ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: rows.length + 1, column: 6 } };
+    }
+  }
+
+  function buildSnapshotWorkbook(){
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Property Basis Record';
+    workbook.created = new Date();
+
+    addOverviewSheet(workbook);
+
+    const usedNames = new Set(['Overview']);
+    periodOrder.forEach(label => {
+      const base = periodOrder.length > 1 ? `Basis - ${label}` : 'Basis Calculation';
+      addBasisSheet(workbook, label, xlUniqueSheetName(usedNames, base));
+    });
+
+    addNotRelevantSheet(workbook);
+    addNotIncludedSheet(workbook);
+    if (periodOrder.length > 1) addComparePeriodsSheet(workbook);
+
+    workbook.views = [{ activeTab: 0 }];
+    return workbook;
+  }
+
+  async function exportSnapshot(){
+    const btn = document.getElementById('exportSnapshotBtn');
+    const originalLabel = btn ? btn.textContent : '';
+    if (btn){ btn.disabled = true; btn.textContent = 'Preparing…'; }
+    try {
+      const workbook = buildSnapshotWorkbook();
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const stamp = new Date().toISOString().slice(0, 10);
+      a.download = `Property_Basis_Snapshot_${xlSlug(currentPeriod)}_${stamp}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err){
+      alert('Could not export snapshot: ' + (err && err.message ? err.message : err));
+    } finally {
+      if (btn){ btn.disabled = false; btn.textContent = originalLabel; }
+    }
   }
 
   function handleImportSnapshot(e, container){
