@@ -98,3 +98,20 @@ mirrors the whole dashboard:
 
 This is separate from "Import snapshot", which still reads back the JSON
 format used for session-only comparison periods.
+
+### Generate Yardi Pull Prompt
+
+"Generate Yardi Pull Prompt" opens a modal for picking one or more months,
+quarters, or years (individually or as a range) and produces a copyable
+prompt for a *separate* Claude session — one with Yardi Breeze open and
+logged in in its own browser, since this dashboard's own Claude session
+can't reach it. The prompt asks that session to:
+
+- Pull each selected period from Yardi Breeze's **Balance Sheet** report
+  (not the Trial Balance), as of that period's last day.
+- Record Land, Building, and Accumulated Depreciation per property, plus
+  address where available, and separately flag properties with none of
+  those three accounts as "not relevant."
+- Reply with a single JSON object (shape shown in the modal) covering every
+  requested period, so it can be pasted back into the dashboard's Claude
+  session to load in.

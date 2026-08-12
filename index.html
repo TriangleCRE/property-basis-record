@@ -408,6 +408,150 @@
     width: 100%;
   }
 
+  /* ---------- Yardi Pull Prompt modal ---------- */
+  .yardi-overlay{
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(38,47,39,0.55);
+    display:flex; align-items:flex-start; justify-content:center;
+    padding: 40px 20px; overflow-y:auto;
+  }
+  .yardi-modal{
+    background: var(--paper-card);
+    border: 1px solid var(--paper-line);
+    border-radius: 8px;
+    max-width: 760px; width:100%;
+    box-shadow: 0 16px 48px rgba(38,47,39,0.28);
+  }
+  .yardi-modal-header{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    gap: 16px;
+    padding: 22px 26px 16px;
+    border-bottom: 1px solid var(--paper-line);
+  }
+  .yardi-modal-title{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size: 21px; font-weight:700;
+    color: var(--ink);
+    margin: 0 0 6px;
+  }
+  .yardi-modal-sub{
+    font-size: 12.5px; color: var(--ink-soft); line-height:1.5; margin:0; max-width:600px;
+  }
+  .yardi-modal-close{
+    background:none; border:none; cursor:pointer;
+    font-size: 22px; line-height:1; color: var(--ink-soft); flex-shrink:0;
+  }
+  .yardi-modal-close:hover{ color: var(--ink); }
+  .yardi-modal-body{ padding: 20px 26px 26px; }
+
+  .yardi-info-banner{
+    background: #FBF2D6;
+    border: 1px solid #E4CD84;
+    border-radius: 6px;
+    padding: 14px 18px;
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: #5C4413;
+    margin-bottom: 20px;
+  }
+  .yardi-info-banner ul{ margin: 6px 0; padding-left: 20px; }
+  .yardi-info-banner code{
+    font-family:'IBM Plex Mono', monospace;
+    background: rgba(0,0,0,0.07);
+    padding: 1px 5px; border-radius: 3px;
+  }
+  .yardi-domain-row{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    margin-top: 10px; font-size: 12.5px;
+  }
+  .yardi-domain-row input{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    padding: 5px 8px;
+    border: 1px solid var(--paper-line);
+    border-radius: 3px;
+    background:#fff;
+    flex: 1; min-width: 160px;
+  }
+
+  .yardi-mode-toggle{
+    display:inline-flex; border: 1px solid var(--paper-line);
+    border-radius: 4px; overflow:hidden; margin-bottom: 14px;
+  }
+  .yardi-mode-toggle button{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size: 12.5px; font-weight:600;
+    padding: 7px 18px; border:none;
+    background: var(--paper-card); color: var(--ink-soft);
+    cursor:pointer;
+  }
+  .yardi-mode-toggle button + button{ border-left: 1px solid var(--paper-line); }
+  .yardi-mode-toggle button.active{ background: var(--sage-deep); color:#fff; }
+
+  .yardi-picker-row{
+    display:flex; align-items:center; gap: 10px; flex-wrap:wrap; margin-bottom: 16px;
+  }
+  .yardi-picker-row input[type="month"], .yardi-picker-row input[type="number"], .yardi-picker-row select{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    padding: 7px 10px;
+    border: 1px solid var(--paper-line);
+    border-radius: 3px;
+    background:#fff;
+    color: var(--ink);
+  }
+  .yardi-picker-row input[type="number"]{ width: 84px; }
+  .yardi-range-sep{ font-size: 12.5px; color: var(--ink-soft); }
+
+  .yardi-period-list{
+    display:flex; flex-wrap:wrap; gap: 8px; margin-bottom: 20px; min-height: 24px;
+  }
+  .yardi-period-chip{
+    display:inline-flex; align-items:center; gap: 6px;
+    font-family:'IBM Plex Mono', monospace; font-size: 12px;
+    padding: 5px 6px 5px 12px;
+    background: var(--paper);
+    border: 1px solid var(--sage-deep);
+    color: var(--sage-deep);
+    border-radius: 14px;
+  }
+  .yardi-period-chip button{
+    background:none; border:none; cursor:pointer;
+    color: var(--sage-deep); font-size: 14px; line-height:1; padding: 0 3px;
+  }
+  .yardi-period-empty{ font-size: 12.5px; color: var(--ink-soft); font-style: italic; }
+
+  .yardi-preview-header{
+    display:flex; justify-content:space-between; align-items:center;
+    border-top: 1px solid var(--paper-line);
+    padding-top: 18px; margin-bottom: 8px;
+  }
+  .yardi-preview-label{
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-soft); font-weight:600;
+  }
+  .yardi-copy-btn{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size: 12.5px; font-weight:600;
+    padding: 8px 14px;
+    border: 1px solid var(--sage-deep);
+    background: var(--sage-deep); color:#fff;
+    border-radius: 4px; cursor:pointer;
+  }
+  .yardi-copy-btn:disabled{ opacity:0.55; cursor:default; }
+  .yardi-copy-btn.copied{ background: var(--sage); border-color: var(--sage); }
+  .yardi-prompt-preview{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px; line-height: 1.6;
+    background:#fff;
+    border: 1px solid var(--paper-line);
+    border-radius: 4px;
+    padding: 16px;
+    white-space: pre-wrap;
+    max-height: 340px; overflow-y:auto;
+    color: var(--ink);
+  }
+
   /* ---------- Controls ---------- */
   .controls{
     display:flex;
@@ -845,6 +989,8 @@
 
 </div>
 
+<div id="yardiModalRoot"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script>
 (function(){
@@ -1070,6 +1216,11 @@
   let addPropertyOpen = false;
   let addNotRelevantOpen = false;
   let addNotIncludedOpen = false;
+  let yardiModalOpen = false;
+  let yardiPeriodMode = 'month';
+  let yardiPeriods = [];
+  let yardiDomain = '100115409.breeze.cafe';
+  let yardiCopyState = 'idle';
 
   const filters = [
     { id:'all', label:'All properties' },
@@ -1133,6 +1284,7 @@
         <div class="period-actions">
           ${periods[currentPeriod].persisted ? `<button class="ghost-btn" id="addPropertyBtn">+ Add property</button>` : ''}
           <button class="ghost-btn" id="addPeriodBtn">+ Add period</button>
+          <button class="ghost-btn" id="yardiPromptBtn" title="Generate a copyable prompt for pulling Yardi Breeze balance sheet data">Generate Yardi Pull Prompt</button>
           <button class="ghost-btn" id="exportSnapshotBtn" title="Download a formatted Excel workbook of the full dashboard">Export snapshot (Excel)</button>
           <button class="ghost-btn" id="importSnapshotBtn" title="Load a previously saved JSON comparison snapshot">Import snapshot</button>
           <input type="file" id="importSnapshotFile" accept="application/json" style="display:none">
@@ -1274,6 +1426,7 @@
       addPeriodOpen = !addPeriodOpen;
       renderBasisPanel(container);
     });
+    document.getElementById('yardiPromptBtn').addEventListener('click', openYardiModal);
     const cancelBtn = document.getElementById('cancelPeriodBtn');
     if (cancelBtn) cancelBtn.addEventListener('click', ()=>{
       addPeriodOpen = false;
@@ -1800,6 +1953,325 @@
     } finally {
       if (btn){ btn.disabled = false; btn.textContent = originalLabel; }
     }
+  }
+
+  // ---------- Generate Yardi Pull Prompt ----------
+  // Builds a copyable prompt for a *separate* Claude session (one that has
+  // Yardi Breeze open in its browser) to pull Balance Sheet figures for
+  // whichever periods are picked here, and return them as JSON shaped to
+  // match this dashboard's period model (see makePeriod/handleImportSnapshot)
+  // so they can be pasted back into this conversation and loaded in.
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  }
+
+  function yardiMonthEnd(y, m){ return new Date(y, m, 0); } // m is 1-indexed; day 0 rolls back to its last day
+  function yardiISODate(d){ return d.toISOString().slice(0, 10); }
+  function yardiMonthIndex(y, m){ return y * 12 + (m - 1); }
+  function yardiMonthFromIndex(idx){ return { y: Math.floor(idx / 12), m: (((idx % 12) + 12) % 12) + 1 }; }
+  function yardiQuarterIndex(y, q){ return y * 4 + (q - 1); }
+  function yardiQuarterFromIndex(idx){ return { y: Math.floor(idx / 4), q: (((idx % 4) + 4) % 4) + 1 }; }
+
+  function yardiMakeMonthPeriod(y, m){
+    return {
+      key: `month-${y}-${String(m).padStart(2,'0')}`,
+      label: new Date(y, m - 1, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' }),
+      asOf: yardiISODate(yardiMonthEnd(y, m)),
+    };
+  }
+  function yardiMakeQuarterPeriod(y, q){
+    return {
+      key: `quarter-${y}-Q${q}`,
+      label: `Q${q} ${y}`,
+      asOf: yardiISODate(yardiMonthEnd(y, q * 3)),
+    };
+  }
+  function yardiMakeYearPeriod(y){
+    return {
+      key: `year-${y}`,
+      label: String(y),
+      asOf: yardiISODate(yardiMonthEnd(y, 12)),
+    };
+  }
+
+  function yardiAddPeriod(entry){
+    if (!yardiPeriods.some(p => p.key === entry.key)) yardiPeriods.push(entry);
+    yardiPeriods.sort((a,b) => a.asOf.localeCompare(b.asOf));
+  }
+  function yardiRemovePeriod(key){
+    yardiPeriods = yardiPeriods.filter(p => p.key !== key);
+  }
+
+  function openYardiModal(){
+    yardiModalOpen = true;
+    yardiCopyState = 'idle';
+    renderYardiModal();
+  }
+  function closeYardiModal(){
+    yardiModalOpen = false;
+    renderYardiModal();
+  }
+  document.addEventListener('keydown', (e) => {
+    if (yardiModalOpen && e.key === 'Escape') closeYardiModal();
+  });
+
+  function buildYardiPrompt(periodsList, domain){
+    if (!periodsList.length){
+      return 'Add at least one month, quarter, or year above to generate the prompt.';
+    }
+    const domainText = (domain || '').trim() || '[your Yardi Breeze domain]';
+    const periodLines = periodsList.map(p => `- ${p.label} (Balance Sheet as of ${p.asOf})`).join('\n');
+    const periodLabels = periodsList.map(p => p.label).join(', ');
+    const example = periodsList[0];
+
+    return `You have access to Yardi Breeze in this browser for Triangle Investments, logged in at https://${domainText}. Before doing anything else, confirm you can actually reach that Yardi Breeze account in this session — if you're not logged in, stop and tell me instead of guessing at numbers.
+
+For each period listed below, open the **Balance Sheet** report in Yardi Breeze (NOT the Trial Balance), run it as of that period's last day, across every property/entity. For every property that has a Land, Building, and/or Accumulated Depreciation line item on that report, record:
+
+- Property name, exactly as it appears in Yardi
+- Property address, if it's shown on the property record (otherwise null)
+- Land balance (otherwise null)
+- Building balance (otherwise null)
+- Accumulated Depreciation balance, as a positive number — the size of the deduction (otherwise null)
+
+Separately, list any property that shows up on that Balance Sheet but has none of those three accounts (no Land, no Building, no Accumulated Depreciation) under "notRelevant", with a short note on why (e.g. "No Land/Building/AccumDep accounts").
+
+Periods to pull:
+${periodLines}
+
+Rules:
+- Pull real figures straight from the Balance Sheet report for that exact period — never estimate, average, or carry a number forward from another period.
+- If a property is missing an account entirely, use null for that field rather than 0.
+- Don't limit yourself to properties you already know about — include everything the Balance Sheet shows for that period.
+
+Respond with **only** a single JSON object — no other text before or after it, no markdown headers, just the JSON (a fenced \`\`\`json code block is fine) — in exactly this shape:
+
+\`\`\`json
+{
+  "periods": [
+    {
+      "label": "${example.label}",
+      "asOf": "${example.asOf}",
+      "properties": [
+        { "name": "123 Main St", "address": "123 Main St, Raleigh, NC", "land": 100000, "building": 200000, "accdep": 50000 }
+      ],
+      "notRelevant": [
+        { "name": "HOA Reserve Fund", "note": "No Land/Building/AccumDep accounts" }
+      ]
+    }
+  ]
+}
+\`\`\`
+
+Include one object in the "periods" array for each period listed above (${periodLabels}). Once you have this JSON, send it back to me — I'll paste it into the Property Basis Record dashboard.`;
+  }
+
+  function renderYardiPickerInputs(){
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth() + 1;
+    const q = Math.floor((m - 1) / 3) + 1;
+    const qOptions = (selected) => [1,2,3,4].map(n => `<option value="${n}" ${n===selected?'selected':''}>Q${n}</option>`).join('');
+
+    if (yardiPeriodMode === 'month'){
+      const def = `${y}-${String(m).padStart(2,'0')}`;
+      return `
+        <input type="month" id="yardiSingleMonth" value="${def}">
+        <button class="ghost-btn" id="yardiAddSingle">+ Add month</button>
+        <span class="yardi-range-sep">or a range:</span>
+        <input type="month" id="yardiRangeFrom" value="${def}">
+        <span class="yardi-range-sep">to</span>
+        <input type="month" id="yardiRangeTo" value="${def}">
+        <button class="ghost-btn" id="yardiAddRange">+ Add range</button>
+      `;
+    }
+    if (yardiPeriodMode === 'quarter'){
+      return `
+        <select id="yardiSingleQuarter">${qOptions(q)}</select>
+        <input type="number" id="yardiSingleYear" value="${y}" min="2000" max="2100">
+        <button class="ghost-btn" id="yardiAddSingle">+ Add quarter</button>
+        <span class="yardi-range-sep">or a range:</span>
+        <select id="yardiRangeFromQ">${qOptions(q)}</select>
+        <input type="number" id="yardiRangeFromY" value="${y}" min="2000" max="2100">
+        <span class="yardi-range-sep">to</span>
+        <select id="yardiRangeToQ">${qOptions(q)}</select>
+        <input type="number" id="yardiRangeToY" value="${y}" min="2000" max="2100">
+        <button class="ghost-btn" id="yardiAddRange">+ Add range</button>
+      `;
+    }
+    return `
+      <input type="number" id="yardiSingleYear" value="${y}" min="2000" max="2100">
+      <button class="ghost-btn" id="yardiAddSingle">+ Add year</button>
+      <span class="yardi-range-sep">or a range:</span>
+      <input type="number" id="yardiRangeFromY" value="${y}" min="2000" max="2100">
+      <span class="yardi-range-sep">to</span>
+      <input type="number" id="yardiRangeToY" value="${y}" min="2000" max="2100">
+      <button class="ghost-btn" id="yardiAddRange">+ Add range</button>
+    `;
+  }
+
+  function wireYardiPickerInputs(){
+    if (yardiPeriodMode === 'month'){
+      document.getElementById('yardiAddSingle').addEventListener('click', () => {
+        const val = document.getElementById('yardiSingleMonth').value;
+        if (!val) return;
+        const [y, m] = val.split('-').map(Number);
+        yardiAddPeriod(yardiMakeMonthPeriod(y, m));
+        renderYardiModal();
+      });
+      document.getElementById('yardiAddRange').addEventListener('click', () => {
+        const fromVal = document.getElementById('yardiRangeFrom').value;
+        const toVal = document.getElementById('yardiRangeTo').value;
+        if (!fromVal || !toVal) return;
+        const [fy, fm] = fromVal.split('-').map(Number);
+        const [ty, tm] = toVal.split('-').map(Number);
+        let a = yardiMonthIndex(fy, fm), b = yardiMonthIndex(ty, tm);
+        if (a > b) [a, b] = [b, a];
+        for (let idx = a; idx <= b; idx++){
+          const { y, m } = yardiMonthFromIndex(idx);
+          yardiAddPeriod(yardiMakeMonthPeriod(y, m));
+        }
+        renderYardiModal();
+      });
+    } else if (yardiPeriodMode === 'quarter'){
+      document.getElementById('yardiAddSingle').addEventListener('click', () => {
+        const q = Number(document.getElementById('yardiSingleQuarter').value);
+        const y = Number(document.getElementById('yardiSingleYear').value);
+        if (!y) return;
+        yardiAddPeriod(yardiMakeQuarterPeriod(y, q));
+        renderYardiModal();
+      });
+      document.getElementById('yardiAddRange').addEventListener('click', () => {
+        const fq = Number(document.getElementById('yardiRangeFromQ').value);
+        const fy = Number(document.getElementById('yardiRangeFromY').value);
+        const tq = Number(document.getElementById('yardiRangeToQ').value);
+        const ty = Number(document.getElementById('yardiRangeToY').value);
+        if (!fy || !ty) return;
+        let a = yardiQuarterIndex(fy, fq), b = yardiQuarterIndex(ty, tq);
+        if (a > b) [a, b] = [b, a];
+        for (let idx = a; idx <= b; idx++){
+          const { y, q } = yardiQuarterFromIndex(idx);
+          yardiAddPeriod(yardiMakeQuarterPeriod(y, q));
+        }
+        renderYardiModal();
+      });
+    } else {
+      document.getElementById('yardiAddSingle').addEventListener('click', () => {
+        const y = Number(document.getElementById('yardiSingleYear').value);
+        if (!y) return;
+        yardiAddPeriod(yardiMakeYearPeriod(y));
+        renderYardiModal();
+      });
+      document.getElementById('yardiAddRange').addEventListener('click', () => {
+        const fy = Number(document.getElementById('yardiRangeFromY').value);
+        const ty = Number(document.getElementById('yardiRangeToY').value);
+        if (!fy || !ty) return;
+        let a = fy, b = ty;
+        if (a > b) [a, b] = [b, a];
+        for (let y = a; y <= b; y++) yardiAddPeriod(yardiMakeYearPeriod(y));
+        renderYardiModal();
+      });
+    }
+  }
+
+  async function copyYardiPrompt(text){
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      yardiCopyState = 'copied';
+      renderYardiModal();
+      setTimeout(() => { yardiCopyState = 'idle'; if (yardiModalOpen) renderYardiModal(); }, 2000);
+    } catch (err){
+      alert('Could not copy to clipboard: ' + (err && err.message ? err.message : err));
+    }
+  }
+
+  function renderYardiModal(){
+    const root = document.getElementById('yardiModalRoot');
+    if (!yardiModalOpen){ root.innerHTML = ''; return; }
+
+    const promptText = buildYardiPrompt(yardiPeriods, yardiDomain);
+
+    root.innerHTML = `
+      <div class="yardi-overlay" id="yardiOverlay">
+        <div class="yardi-modal">
+          <div class="yardi-modal-header">
+            <div>
+              <p class="yardi-modal-title">Generate Yardi Pull Prompt</p>
+              <p class="yardi-modal-sub">Pick the months, quarters, or years you want pulled — then copy the prompt into a Claude session that has access to Yardi Breeze. Bring its JSON output back here to load into the dashboard.</p>
+            </div>
+            <button class="yardi-modal-close" id="yardiCloseBtn" aria-label="Close">×</button>
+          </div>
+          <div class="yardi-modal-body">
+            <div class="yardi-info-banner">
+              <b>Before you paste this in:</b> that Claude session can only see what you give it access to — it needs Yardi Breeze open and logged in in its own browser. This dashboard reads the <b>Balance Sheet</b> report, not the Trial Balance.
+              <div class="yardi-domain-row">
+                <span>Yardi Breeze domain:</span>
+                <input type="text" id="yardiDomainInput" value="${escapeHtml(yardiDomain)}" spellcheck="false">
+              </div>
+            </div>
+
+            <div class="yardi-mode-toggle" id="yardiModeToggle">
+              <button data-mode="month" class="${yardiPeriodMode==='month'?'active':''}">Month</button>
+              <button data-mode="quarter" class="${yardiPeriodMode==='quarter'?'active':''}">Quarter</button>
+              <button data-mode="year" class="${yardiPeriodMode==='year'?'active':''}">Year</button>
+            </div>
+
+            <div class="yardi-picker-row" id="yardiPickerRow">${renderYardiPickerInputs()}</div>
+
+            <div class="yardi-period-list" id="yardiPeriodList">
+              ${yardiPeriods.length ? yardiPeriods.map(p => `
+                <span class="yardi-period-chip">${escapeHtml(p.label)}<button data-key="${p.key}" title="Remove">×</button></span>
+              `).join('') : `<span class="yardi-period-empty">No periods selected yet — add at least one above.</span>`}
+            </div>
+
+            <div class="yardi-preview-header">
+              <span class="yardi-preview-label">Prompt Preview</span>
+              <button class="yardi-copy-btn ${yardiCopyState==='copied'?'copied':''}" id="yardiCopyBtn" ${yardiPeriods.length ? '' : 'disabled'}>${yardiCopyState==='copied' ? '✓ Copied' : 'Copy prompt'}</button>
+            </div>
+            <div class="yardi-prompt-preview">${escapeHtml(promptText)}</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('yardiOverlay').addEventListener('click', (e) => {
+      if (e.target.id === 'yardiOverlay') closeYardiModal();
+    });
+    document.getElementById('yardiCloseBtn').addEventListener('click', closeYardiModal);
+    document.getElementById('yardiDomainInput').addEventListener('input', (e) => {
+      yardiDomain = e.target.value;
+      const inp = e.target;
+      const pos = inp.selectionStart;
+      renderYardiModal();
+      const newInp = document.getElementById('yardiDomainInput');
+      newInp.focus();
+      newInp.setSelectionRange(pos, pos);
+    });
+    document.getElementById('yardiModeToggle').querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        yardiPeriodMode = btn.dataset.mode;
+        renderYardiModal();
+      });
+    });
+    wireYardiPickerInputs();
+    document.getElementById('yardiPeriodList').querySelectorAll('button[data-key]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        yardiRemovePeriod(btn.dataset.key);
+        renderYardiModal();
+      });
+    });
+    const copyBtn = document.getElementById('yardiCopyBtn');
+    if (copyBtn) copyBtn.addEventListener('click', () => copyYardiPrompt(promptText));
   }
 
   function handleImportSnapshot(e, container){
