@@ -76,6 +76,25 @@ environment variable:
 
 `index.html` fetches from the API on load and writes every add/edit/delete
 back through it, so changes persist across reloads and are visible to
-everyone. The "+ Add period" / CSV-import / snapshot-export/import features
+everyone. The "+ Add period" / CSV-import / snapshot-import features
 remain session-only comparison tools, same as before — only the primary
 "May 2026" period is backed by the database.
+
+### Excel snapshot export
+
+"Export snapshot" downloads a formatted `.xlsx` workbook (built client-side
+with [ExcelJS](https://github.com/exceljs/exceljs), loaded from a CDN) that
+mirrors the whole dashboard:
+
+- **Overview** — generated timestamp, as-of period, and the same stats shown
+  in the stat strip (properties recorded, total basis, land-only/building-only
+  counts, flagged-for-review count, not relevant/not included counts).
+- **One "Basis" sheet per period** — every property with land, building,
+  accumulated depreciation, a live `=SUM(...)` basis formula, status, and
+  notes, with a totals row, autofilter, and a frozen header.
+- **Not Relevant** and **Not Included** — the same lists shown in those tabs.
+- **Compare Periods** — included whenever more than one period is loaded,
+  matching the Compare Periods tab.
+
+This is separate from "Import snapshot", which still reads back the JSON
+format used for session-only comparison periods.
