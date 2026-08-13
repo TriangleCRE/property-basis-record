@@ -2267,7 +2267,7 @@
 
 Read every property's Balance Sheet in the file(s). For each property, record:
 - "name": the property name as printed on its report — but change any curly apostrophe (’) to a straight ('), and fix the typo "Statunton" to "Staunton".
-- "address": the address if the report shows one, otherwise null.
+- "address": always null — the dashboard already has each property's address, and the Balance Sheet doesn't show it.
 - "land": the Land balance, or null if there is no Land line.
 - "building": the Buildings balance, or null if there is none.
 - "accdep": the Accumulated Depreciation balance as a POSITIVE number (the size of the deduction), or null if there is none.
