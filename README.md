@@ -76,9 +76,12 @@ environment variable:
 
 `index.html` fetches from the API on load and writes every add/edit/delete
 back through it, so changes persist across reloads and are visible to
-everyone. The "+ Add period" / CSV-import / snapshot-import features
-remain session-only comparison tools, same as before — only the primary
-"May 2026" period is backed by the database.
+everyone. The "+ Add period" / CSV-import / snapshot-import / Yardi-JSON-import
+features remain session-only comparison tools, same as before — only the
+primary "May 2026" period is backed by the database. Any session-only period
+can be removed again with the × on its tab (exact label match only — deleting
+"June 2026" never touches a separately-loaded "Jun 2026"); the live database
+period can't be removed this way.
 
 ### Excel snapshot export
 
@@ -99,19 +102,28 @@ mirrors the whole dashboard:
 This is separate from "Import snapshot", which still reads back the JSON
 format used for session-only comparison periods.
 
-### Generate Yardi Pull Prompt
+### Add Period with Claude
 
-"Generate Yardi Pull Prompt" opens a modal for picking one or more months,
-quarters, or years (individually or as a range) and produces a copyable
-prompt for a *separate* Claude session — one with Yardi Breeze open and
-logged in in its own browser, since this dashboard's own Claude session
-can't reach it. The prompt asks that session to:
+"Add Period with Claude" opens a two-step modal.
 
-- Pull each selected period from Yardi Breeze's **Balance Sheet** report
-  (not the Trial Balance), as of that period's last day.
-- Record Land, Building, and Accumulated Depreciation per property, plus
-  address where available, and separately flag properties with none of
-  those three accounts as "not relevant."
-- Reply with a single JSON object (shape shown in the modal) covering every
-  requested period, so it can be pasted back into the dashboard's Claude
-  session to load in.
+**Step 1 — build the prompt.** Pick one or more months, quarters, or years
+(individually or as a range); the modal produces a copyable prompt for a
+*separate* Claude session — one with Yardi Breeze open and logged in in its
+own browser, since this dashboard's own session can't reach it. The prompt:
+
+- Has that session confirm it can actually reach Yardi Breeze before doing
+  anything else.
+- Bakes in the exact list of properties currently tracked on this dashboard
+  (the live period's property names) and asks it to pull Land, Building, and
+  Accumulated Depreciation for precisely that list from Yardi Breeze's
+  **Balance Sheet** report (not the Trial Balance), as of each selected
+  period's last day — matching Yardi's naming loosely (typos, curly
+  apostrophes, etc.) but keeping this dashboard's spelling in the output.
+- Asks for a single JSON object (shape shown in the modal) covering every
+  requested period.
+
+**Step 2 — load the response back in.** Paste that JSON straight into the
+text box, or attach it as a `.json` file, and click "Load into dashboard."
+Each period in the response is added as its own new tab; a label that
+matches a period already loaded this session is replaced in place rather
+than duplicated.
