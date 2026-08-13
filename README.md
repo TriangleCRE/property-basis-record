@@ -149,3 +149,26 @@ text box, or attach it as a `.json` file, and click "Load into dashboard."
 Each period in the response is saved to the database and added as its own
 new tab; a label that matches a period already saved is replaced in place
 (after a confirmation prompt) rather than duplicated.
+
+### Trends tab
+
+One small line chart per property, plotting Land, Building, Accumulated
+Depreciation, and Basis across every loaded period (chronological order is a
+best-effort guess: it uses `asOf` when a period has one, otherwise it parses
+the label itself — "May 2026", "Q3 2026", a bare "2026" — falling back to
+load order for anything it can't parse). A property that isn't on a given
+period's Balance Sheet shows as a real gap in that period's line, not a
+false zero.
+
+Click a card to open the expanded chart: hover any point for a tooltip with
+the exact period and all four values, a flag chip per period (the same
+✓/◇/B/✕ marks as the Basis Calculation tab), an auto-generated "Notable
+changes" callout (flags a ≥10%-and-≥$1,000 swing between any two consecutive
+periods, a status change, or a property appearing/disappearing from a
+period), and a full data table underneath with every recorded value.
+
+Nothing here is cached — every chart, tooltip, and table cell is computed
+fresh from the live `periods` state each time it renders, straight from the
+same data the Basis Calculation tab reads and writes. Edit a value there (or
+add/remove a property or period) and the Trends tab reflects it the next
+time you view it, with no separate sync step.
