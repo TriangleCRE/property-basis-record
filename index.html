@@ -341,18 +341,32 @@
     font-family:'IBM Plex Mono', monospace;
     font-size: 12.5px;
     font-weight: 500;
-    padding: 6px 12px;
+    display:flex;
+    align-items:center;
+    gap: 6px;
+    padding: 6px 8px 6px 12px;
     border: 1px solid var(--sage-deep);
     background: var(--paper-card);
     border-radius: 3px;
-    cursor:pointer;
     color: var(--sage-deep);
   }
   .period-pill.active{
     background: var(--sage-deep);
     color: #fff;
   }
+  .period-pill-label{ cursor:pointer; }
   .period-pill .pcount{ opacity:0.7; margin-left:5px; }
+  .period-pill-delete{
+    border:none;
+    background:transparent;
+    cursor:pointer;
+    font-size: 14px;
+    line-height:1;
+    padding: 0 2px;
+    color: inherit;
+    opacity: 0.55;
+  }
+  .period-pill-delete:hover{ opacity:1; color: var(--review); }
 
   .period-actions{
     display:flex;
@@ -550,6 +564,34 @@
     white-space: pre-wrap;
     max-height: 340px; overflow-y:auto;
     color: var(--ink);
+  }
+
+  .yardi-json-section{
+    border-top: 1px solid var(--paper-line);
+    margin-top: 22px;
+    padding-top: 18px;
+  }
+  .yardi-json-textarea{
+    width: 100%;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px;
+    padding: 12px;
+    border: 1px solid var(--paper-line);
+    border-radius: 4px;
+    background:#fff;
+    color: var(--ink);
+    resize: vertical;
+    box-sizing: border-box;
+  }
+  .yardi-json-row{
+    display:flex; align-items:center; gap: 10px; flex-wrap:wrap;
+    margin-top: 10px;
+  }
+  .yardi-json-row input[type="file"]{ font-size: 12.5px; max-width: 240px; }
+  .yardi-json-status{
+    font-size: 12.5px;
+    color: var(--sage-deep);
+    margin-top: 8px;
   }
 
   /* ---------- Controls ---------- */
@@ -1221,6 +1263,8 @@
   let yardiPeriods = [];
   let yardiDomain = '100115409.breeze.cafe';
   let yardiCopyState = 'idle';
+  let yardiJsonPaste = '';
+  let yardiJsonStatus = '';
 
   const filters = [
     { id:'all', label:'All properties' },
@@ -1279,12 +1323,17 @@
     container.innerHTML = `
       <div class="period-bar">
         <div class="period-tabs" id="periodTabs">
-          ${periodOrder.map(label => `<button class="period-pill ${label===currentPeriod?'active':''}" data-period="${label}">${label}<span class="pcount">${periods[label].basis.length}</span></button>`).join('')}
+          ${periodOrder.map(label => `
+            <div class="period-pill ${label===currentPeriod?'active':''}">
+              <span class="period-pill-label" data-period="${label}">${label}<span class="pcount">${periods[label].basis.length}</span></span>
+              ${!periods[label].persisted ? `<button class="period-pill-delete" data-delete-period="${label}" title="Delete this period">×</button>` : ''}
+            </div>
+          `).join('')}
         </div>
         <div class="period-actions">
           ${periods[currentPeriod].persisted ? `<button class="ghost-btn" id="addPropertyBtn">+ Add property</button>` : ''}
           <button class="ghost-btn" id="addPeriodBtn">+ Add period</button>
-          <button class="ghost-btn" id="yardiPromptBtn" title="Generate a copyable prompt for pulling Yardi Breeze balance sheet data">Generate Yardi Pull Prompt</button>
+          <button class="ghost-btn" id="yardiPromptBtn" title="Get a copyable Claude prompt that pulls Yardi Breeze balance sheet data and loads it in as a new period">Add Period with Claude</button>
           <button class="ghost-btn" id="exportSnapshotBtn" title="Download a formatted Excel workbook of the full dashboard">Export snapshot (Excel)</button>
           <button class="ghost-btn" id="importSnapshotBtn" title="Load a previously saved JSON comparison snapshot">Import snapshot</button>
           <input type="file" id="importSnapshotFile" accept="application/json" style="display:none">
@@ -1411,13 +1460,19 @@
       });
     });
 
-    // Period pills
-    document.querySelectorAll('.period-pill').forEach(pill=>{
+    // Period pills — click the label to switch, click the × to delete
+    document.querySelectorAll('.period-pill-label').forEach(pill=>{
       pill.addEventListener('click', ()=>{
         currentPeriod = pill.dataset.period;
         expandedRow = null;
         renderTabs();
         renderBasisPanel(container);
+      });
+    });
+    document.querySelectorAll('.period-pill-delete').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        handleDeletePeriod(btn.dataset.deletePeriod, container);
       });
     });
 
@@ -1426,7 +1481,7 @@
       addPeriodOpen = !addPeriodOpen;
       renderBasisPanel(container);
     });
-    document.getElementById('yardiPromptBtn').addEventListener('click', openYardiModal);
+    document.getElementById('yardiPromptBtn').addEventListener('click', ()=> openYardiModal(container));
     const cancelBtn = document.getElementById('cancelPeriodBtn');
     if (cancelBtn) cancelBtn.addEventListener('click', ()=>{
       addPeriodOpen = false;
@@ -1632,6 +1687,22 @@
     };
     reader.onerror = () => { errorBox.textContent = 'Could not read the file.'; };
     reader.readAsText(file);
+  }
+
+  // Deletes one period by its exact label — never a fuzzy/substring match,
+  // so deleting "June 2026" can never touch a separately-loaded "Jun 2026".
+  // The live, database-backed period can't be removed this way.
+  function handleDeletePeriod(label, container){
+    const per = periods[label];
+    if (!per || per.persisted) return;
+    if (!confirm(`Delete the "${label}" period? It only exists in this browser session (nothing is saved to the database), and this cannot be undone.`)) return;
+    delete periods[label];
+    periodOrder = periodOrder.filter(l => l !== label);
+    if (currentPeriod === label){
+      currentPeriod = periodOrder.includes(LIVE_PERIOD) ? LIVE_PERIOD : (periodOrder[0] || LIVE_PERIOD);
+    }
+    renderTabs();
+    renderBasisPanel(container);
   }
 
   // ---------- Excel snapshot export ----------
@@ -1955,7 +2026,7 @@
     }
   }
 
-  // ---------- Generate Yardi Pull Prompt ----------
+  // ---------- Add Period with Claude ----------
   // Builds a copyable prompt for a *separate* Claude session (one that has
   // Yardi Breeze open in its browser) to pull Balance Sheet figures for
   // whichever periods are picked here, and return them as JSON shaped to
@@ -2002,9 +2073,16 @@
     yardiPeriods = yardiPeriods.filter(p => p.key !== key);
   }
 
-  function openYardiModal(){
+  let yardiModalContainer = null;
+  let yardiJsonError = '';
+
+  function openYardiModal(container){
+    yardiModalContainer = container;
     yardiModalOpen = true;
     yardiCopyState = 'idle';
+    yardiJsonPaste = '';
+    yardiJsonError = '';
+    yardiJsonStatus = '';
     renderYardiModal();
   }
   function closeYardiModal(){
@@ -2015,7 +2093,15 @@
     if (yardiModalOpen && e.key === 'Escape') closeYardiModal();
   });
 
-  function buildYardiPrompt(periodsList, domain){
+  // The specific list of properties tracked on this dashboard (the live,
+  // database-backed period) — this is what gets baked into the prompt so
+  // Claude pulls figures for exactly these properties, not a guess at "every
+  // property/entity" in Yardi.
+  function yardiTrackedPropertyNames(){
+    return periods[LIVE_PERIOD].basis.map(p => p.name);
+  }
+
+  function buildYardiPrompt(periodsList, domain, propertyNames){
     if (!periodsList.length){
       return 'Add at least one month, quarter, or year above to generate the prompt.';
     }
@@ -2023,26 +2109,32 @@
     const periodLines = periodsList.map(p => `- ${p.label} (Balance Sheet as of ${p.asOf})`).join('\n');
     const periodLabels = periodsList.map(p => p.label).join(', ');
     const example = periodsList[0];
+    const names = propertyNames && propertyNames.length ? propertyNames : ['123 Main St'];
+    const propertyLines = names.map(n => `- ${n}`).join('\n');
 
     return `You have access to Yardi Breeze in this browser for Triangle Investments, logged in at https://${domainText}. Before doing anything else, confirm you can actually reach that Yardi Breeze account in this session — if you're not logged in, stop and tell me instead of guessing at numbers.
 
-For each period listed below, open the **Balance Sheet** report in Yardi Breeze (NOT the Trial Balance), run it as of that period's last day, across every property/entity. For every property that has a Land, Building, and/or Accumulated Depreciation line item on that report, record:
+For each period listed below, open the **Balance Sheet** report in Yardi Breeze (NOT the Trial Balance), run it as of that period's last day. Pull figures for exactly the properties in MY LIST below — do not skip any, and do not add ones that aren't on it. For each one, record:
 
-- Property name, exactly as it appears in Yardi
-- Property address, if it's shown on the property record (otherwise null)
 - Land balance (otherwise null)
-- Building balance (otherwise null)
+- Building balance (Yardi may label this "Buildings") (otherwise null)
 - Accumulated Depreciation balance, as a positive number — the size of the deduction (otherwise null)
+- Property address, if it's shown on the property record (otherwise null)
 
-Separately, list any property that shows up on that Balance Sheet but has none of those three accounts (no Land, no Building, no Accumulated Depreciation) under "notRelevant", with a short note on why (e.g. "No Land/Building/AccumDep accounts").
+Match properties by name even if Yardi's spelling, punctuation, or apostrophes differ slightly (curly vs. straight apostrophes, minor typos, etc.) — always use MY spelling from the list below in your output, not Yardi's. If a property on my list genuinely has no matching entity in Yardi, still include it in the output with land/building/accdep all null rather than leaving it out.
+
+If you notice a property on the Balance Sheet that ISN'T on my list, don't pull figures for it — just note its name under "notRelevant" with a short reason (e.g. "Not on my tracked property list").
 
 Periods to pull:
 ${periodLines}
 
+Properties to pull (pull every one of these, in this exact order, using this exact spelling in your output):
+${propertyLines}
+
 Rules:
 - Pull real figures straight from the Balance Sheet report for that exact period — never estimate, average, or carry a number forward from another period.
 - If a property is missing an account entirely, use null for that field rather than 0.
-- Don't limit yourself to properties you already know about — include everything the Balance Sheet shows for that period.
+- Accumulated Depreciation should be a positive number (the size of the deduction), not negative.
 
 Respond with **only** a single JSON object — no other text before or after it, no markdown headers, just the JSON (a fenced \`\`\`json code block is fine) — in exactly this shape:
 
@@ -2053,17 +2145,17 @@ Respond with **only** a single JSON object — no other text before or after it,
       "label": "${example.label}",
       "asOf": "${example.asOf}",
       "properties": [
-        { "name": "123 Main St", "address": "123 Main St, Raleigh, NC", "land": 100000, "building": 200000, "accdep": 50000 }
+        { "name": "${names[0]}", "address": "123 Main St, Raleigh, NC", "land": 100000, "building": 200000, "accdep": 50000 }
       ],
       "notRelevant": [
-        { "name": "HOA Reserve Fund", "note": "No Land/Building/AccumDep accounts" }
+        { "name": "HOA Reserve Fund", "note": "Not on my tracked property list" }
       ]
     }
   ]
 }
 \`\`\`
 
-Include one object in the "periods" array for each period listed above (${periodLabels}). Once you have this JSON, send it back to me — I'll paste it into the Property Basis Record dashboard.`;
+Include one object in the "periods" array for each period listed above (${periodLabels}), and one entry in that period's "properties" array for every property listed above. Once you have this JSON, send it back to me — I'll paste it (or attach it as a .json file) into the Property Basis Record dashboard to load it in as a new period.`;
   }
 
   function renderYardiPickerInputs(){
@@ -2199,21 +2291,22 @@ Include one object in the "periods" array for each period listed above (${period
     const root = document.getElementById('yardiModalRoot');
     if (!yardiModalOpen){ root.innerHTML = ''; return; }
 
-    const promptText = buildYardiPrompt(yardiPeriods, yardiDomain);
+    const propertyNames = yardiTrackedPropertyNames();
+    const promptText = buildYardiPrompt(yardiPeriods, yardiDomain, propertyNames);
 
     root.innerHTML = `
       <div class="yardi-overlay" id="yardiOverlay">
         <div class="yardi-modal">
           <div class="yardi-modal-header">
             <div>
-              <p class="yardi-modal-title">Generate Yardi Pull Prompt</p>
-              <p class="yardi-modal-sub">Pick the months, quarters, or years you want pulled — then copy the prompt into a Claude session that has access to Yardi Breeze. Bring its JSON output back here to load into the dashboard.</p>
+              <p class="yardi-modal-title">Add Period with Claude</p>
+              <p class="yardi-modal-sub">Step 1 — pick the months, quarters, or years you want pulled, then copy the prompt into a Claude session with Yardi Breeze open. Step 2 — bring its JSON response back here to load it in as a new period.</p>
             </div>
             <button class="yardi-modal-close" id="yardiCloseBtn" aria-label="Close">×</button>
           </div>
           <div class="yardi-modal-body">
             <div class="yardi-info-banner">
-              <b>Before you paste this in:</b> that Claude session can only see what you give it access to — it needs Yardi Breeze open and logged in in its own browser. This dashboard reads the <b>Balance Sheet</b> report, not the Trial Balance.
+              <b>Before you paste this in:</b> that Claude session can only see what you give it access to — it needs Yardi Breeze open and logged in in its own browser. This dashboard reads the <b>Balance Sheet</b> report, not the Trial Balance. The prompt already lists the ${propertyNames.length} properties tracked on this dashboard, so Claude pulls figures for exactly those — nothing more, nothing less.
               <div class="yardi-domain-row">
                 <span>Yardi Breeze domain:</span>
                 <input type="text" id="yardiDomainInput" value="${escapeHtml(yardiDomain)}" spellcheck="false">
@@ -2235,10 +2328,25 @@ Include one object in the "periods" array for each period listed above (${period
             </div>
 
             <div class="yardi-preview-header">
-              <span class="yardi-preview-label">Prompt Preview</span>
+              <span class="yardi-preview-label">Step 1 — Prompt Preview</span>
               <button class="yardi-copy-btn ${yardiCopyState==='copied'?'copied':''}" id="yardiCopyBtn" ${yardiPeriods.length ? '' : 'disabled'}>${yardiCopyState==='copied' ? '✓ Copied' : 'Copy prompt'}</button>
             </div>
             <div class="yardi-prompt-preview">${escapeHtml(promptText)}</div>
+
+            <div class="yardi-json-section">
+              <div class="yardi-preview-header">
+                <span class="yardi-preview-label">Step 2 — Load Claude's JSON response</span>
+                <button class="yardi-copy-btn" id="yardiLoadJsonBtn">Load into dashboard</button>
+              </div>
+              <p class="yardi-modal-sub" style="margin-bottom:10px">Paste the JSON Claude sent back, or attach it as a .json file. Each period in it is added as a new tab here — if a period label matches one already loaded this session, it's replaced rather than duplicated.</p>
+              <textarea class="yardi-json-textarea" id="yardiJsonInput" rows="6" placeholder='{ "periods": [ { "label": "...", "properties": [...] } ] }'>${escapeHtml(yardiJsonPaste)}</textarea>
+              <div class="yardi-json-row">
+                <span>...or attach a .json file</span>
+                <input type="file" id="yardiJsonFile" accept="application/json">
+              </div>
+              ${yardiJsonError ? `<div class="panel-error">${escapeHtml(yardiJsonError)}</div>` : ''}
+              ${yardiJsonStatus ? `<div class="yardi-json-status">${escapeHtml(yardiJsonStatus)}</div>` : ''}
+            </div>
           </div>
         </div>
       </div>
@@ -2272,6 +2380,94 @@ Include one object in the "periods" array for each period listed above (${period
     });
     const copyBtn = document.getElementById('yardiCopyBtn');
     if (copyBtn) copyBtn.addEventListener('click', () => copyYardiPrompt(promptText));
+
+    document.getElementById('yardiJsonInput').addEventListener('input', (e) => {
+      yardiJsonPaste = e.target.value;
+    });
+    document.getElementById('yardiJsonFile').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        yardiJsonPaste = String(ev.target.result);
+        yardiJsonError = '';
+        yardiJsonStatus = '';
+        renderYardiModal();
+      };
+      reader.readAsText(file);
+    });
+    document.getElementById('yardiLoadJsonBtn').addEventListener('click', handleYardiJsonLoad);
+  }
+
+  // Loads the JSON Claude sends back in response to the Yardi Pull Prompt
+  // (see buildYardiPrompt) — one new period tab per entry in "periods". A
+  // label that matches a period already loaded this session is replaced in
+  // place; the live, database-backed period can never be overwritten here.
+  function handleYardiJsonLoad(){
+    yardiJsonError = '';
+    yardiJsonStatus = '';
+    const raw = (yardiJsonPaste || '').trim();
+    if (!raw){
+      yardiJsonError = 'Paste the JSON Claude sent back, or attach it as a .json file.';
+      renderYardiModal();
+      return;
+    }
+    let payload;
+    try {
+      payload = JSON.parse(raw);
+    } catch (err){
+      yardiJsonError = "That doesn't look like valid JSON — make sure you copied Claude's full response, including the { and } braces.";
+      renderYardiModal();
+      return;
+    }
+    if (!payload || !Array.isArray(payload.periods) || !payload.periods.length){
+      yardiJsonError = 'Expected an object with a "periods" array — this doesn\'t look like the response this prompt asks for.';
+      renderYardiModal();
+      return;
+    }
+    try {
+      const added = [], updated = [];
+      payload.periods.forEach(p => {
+        if (!p || typeof p.label !== 'string' || !p.label.trim()) throw new Error('One of the periods is missing a "label".');
+        const label = p.label.trim();
+        if (!Array.isArray(p.properties) || !p.properties.length) throw new Error(`"${label}" has no "properties" array.`);
+        const rawArray = p.properties.filter(item => item && item.name).map(item => ({
+          name: item.name,
+          address: item.address || null,
+          land: parseNumber(item.land),
+          building: parseNumber(item.building),
+          accdep: parseNumber(item.accdep) !== null ? Math.abs(parseNumber(item.accdep)) : null,
+        }));
+        if (!rawArray.length) throw new Error(`"${label}" has no named properties in it.`);
+        // Exact-label match only — loading "Jun 2026" never touches "June 2026".
+        const existingIndex = periodOrder.indexOf(label);
+        if (existingIndex !== -1){
+          if (periods[label].persisted) throw new Error(`"${label}" is the live database period and can't be overwritten this way.`);
+          delete periods[label];
+          periodOrder.splice(existingIndex, 1);
+          makePeriod(label, rawArray);
+          const newIndex = periodOrder.indexOf(label);
+          periodOrder.splice(newIndex, 1);
+          periodOrder.splice(existingIndex, 0, label);
+          updated.push(label);
+        } else {
+          makePeriod(label, rawArray);
+          added.push(label);
+        }
+        currentPeriod = label;
+      });
+      yardiJsonPaste = '';
+      const parts = [];
+      if (added.length) parts.push(`added "${added.join('", "')}"`);
+      if (updated.length) parts.push(`replaced "${updated.join('", "')}"`);
+      closeYardiModal();
+      renderTabs();
+      renderBasisPanel(yardiModalContainer);
+      alert(`Loaded into the dashboard — ${parts.join(' and ')}.`);
+    } catch (err){
+      yardiJsonError = err.message;
+      renderYardiModal();
+    }
   }
 
   function handleImportSnapshot(e, container){
