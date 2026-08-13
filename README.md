@@ -5,15 +5,24 @@ A single-page site (`index.html`) backed by serverless API functions
 
 ## Data storage
 
-Property records live in a Postgres `properties` table (one row per
-property, tagged with a `category` of `basis`, `not_relevant`, or
-`not_included` — matching the three tabs in the UI). See `lib/schema.js`
-for the column definitions.
+Two Postgres tables:
 
-The API (`api/properties.js`, `api/properties/[id].js`) reads the
-connection string from environment variables only — `DATABASE_URL` (or
-`POSTGRES_URL`, as set automatically by the Vercel Postgres/Neon storage
-integration). Nothing is hard-coded.
+- `periods` — one row per basis-calculation period ("May 2026", a
+  CSV-loaded "June 2026", a Claude-JSON-loaded "Q3 2026", etc.). Exactly one
+  row has `is_live = true` — the original, permanent period, seeded from
+  `lib/seedData.js` and never deletable.
+- `properties` — one row per property, tagged with a `category` of `basis`,
+  `not_relevant`, or `not_included` (matching the three tabs in the UI).
+  `basis` rows carry a `period_id` tying them to one row in `periods`;
+  `not_relevant`/`not_included` rows are global (not period-scoped —
+  every period shows the same two lists), so their `period_id` is `NULL`.
+
+See `lib/schema.js` for the column definitions.
+
+The API (`api/properties.js`, `api/properties/[id].js`, `api/periods.js`,
+`api/periods/[label].js`) reads the connection string from environment
+variables only — `DATABASE_URL` (or `POSTGRES_URL`, as set automatically by
+the Vercel Postgres/Neon storage integration). Nothing is hard-coded.
 
 ### Self-healing setup
 
@@ -21,15 +30,21 @@ The site does **not** depend on anyone running a migration or seed script
 against production. Every data-access call goes through
 `lib/ensureSeeded.js`, which:
 
-1. Creates the `properties` table if it doesn't exist yet.
-2. Only if the table is completely empty, loads the original seed data
-   (`lib/seedData.js`, extracted from the site's original hard-coded
-   records).
+1. Creates the `periods`/`properties` tables (or adds the `period_id`
+   column) if they don't exist yet.
+2. Makes sure exactly one `is_live` period exists, creating it if needed.
+3. Backfills `period_id` onto any legacy `basis` row that predates the
+   `periods` table, pointing it at that live period — so upgrading an
+   existing production database (with real data already in it) is just as
+   safe as bootstrapping a brand-new one.
+4. Only if the `properties` table is completely empty, loads the original
+   seed data (`lib/seedData.js`) onto the live period.
 
-Because the seed only ever runs against an empty table, it can never
-overwrite real edits once real data exists — and a fresh deploy against a
-brand-new database heals itself on the very first request instead of
-looking like all the data disappeared.
+Because the seed only ever runs against an empty table, and the backfill
+only ever touches rows that don't already have a `period_id`, none of this
+can ever overwrite real edits once real data exists — and a fresh deploy
+against a brand-new database heals itself on the very first request instead
+of looking like all the data disappeared.
 
 ### Manual/local scripts
 
@@ -46,12 +61,17 @@ These are optional — the live site never requires them to have been run.
 
 ## API
 
-- `GET    /api/properties` — `{ basis: [...], not_relevant: [...], not_included: [...] }`
-- `POST   /api/properties` — create a record: `{ category, name, land?, building?, accdep?, address?, extra? }`
+- `GET    /api/properties` — `{ periods: [{ id, label, asOf, isLive, basis: [...] }], not_relevant: [...], not_included: [...] }`
+- `POST   /api/properties` — create a record: `{ category, name, land?, building?, accdep?, address?, extra?, periodId? }`
+  (`periodId` is required when `category` is `basis`; ignored for the global categories)
 - `PUT    /api/properties/:id` — update one or more fields
 - `DELETE /api/properties/:id` — remove a record
+- `POST   /api/periods` — create a new period, or replace an existing
+  non-live one in place: `{ label, asOf?, properties: [{name, land?, building?, accdep?, address?}] }`
+- `DELETE /api/periods/:label` — delete a period and every basis row on it
+  (exact label match; the live period can't be deleted this way)
 
-All four require a valid session (see below) and respond `401` without one.
+All require a valid session (see below) and respond `401` without one.
 
 ## Passcode gate
 
@@ -76,12 +96,17 @@ environment variable:
 
 `index.html` fetches from the API on load and writes every add/edit/delete
 back through it, so changes persist across reloads and are visible to
-everyone. The "+ Add period" / CSV-import / snapshot-import / Yardi-JSON-import
-features remain session-only comparison tools, same as before — only the
-primary "May 2026" period is backed by the database. Any session-only period
-can be removed again with the × on its tab (exact label match only — deleting
-"June 2026" never touches a separately-loaded "Jun 2026"); the live database
-period can't be removed this way.
+everyone — for **every** period, not just the live "May 2026" one. Loading
+a period via "+ Add period" (CSV) or "Add Period with Claude" (JSON) saves
+it to the database the moment it loads, so it's still there the next time
+anyone (on any browser) opens the dashboard. Uploading a period whose label
+matches one already saved replaces its saved values in place — with a
+confirmation prompt first, since it overwrites data other people can see —
+rather than creating a duplicate tab. Any non-live period can be removed
+again with the × on its tab, which deletes it (and every property on it)
+from the database (exact label match only — deleting "June 2026" never
+touches a separately-loaded "Jun 2026"); the live period can't be removed
+or overwritten this way.
 
 ### Excel snapshot export
 
@@ -98,9 +123,6 @@ mirrors the whole dashboard:
 - **Not Relevant** and **Not Included** — the same lists shown in those tabs.
 - **Compare Periods** — included whenever more than one period is loaded,
   matching the Compare Periods tab.
-
-This is separate from "Import snapshot", which still reads back the JSON
-format used for session-only comparison periods.
 
 ### Add Period with Claude
 
@@ -124,6 +146,6 @@ own browser, since this dashboard's own session can't reach it. The prompt:
 
 **Step 2 — load the response back in.** Paste that JSON straight into the
 text box, or attach it as a `.json` file, and click "Load into dashboard."
-Each period in the response is added as its own new tab; a label that
-matches a period already loaded this session is replaced in place rather
-than duplicated.
+Each period in the response is saved to the database and added as its own
+new tab; a label that matches a period already saved is replaced in place
+(after a confirmation prompt) rather than duplicated.
