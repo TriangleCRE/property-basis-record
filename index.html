@@ -1159,37 +1159,65 @@
       method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(fields)
     }),
     remove: (id) => apiFetch('/api/properties/' + id, { method: 'DELETE' }),
+    createPeriod: (payload) => apiFetch('/api/periods', {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    }),
+    deletePeriod: (label) => apiFetch('/api/periods/' + encodeURIComponent(label), { method: 'DELETE' }),
     login: (passcode) => apiFetch('/api/login', {
       method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ passcode })
     }),
   };
 
   // ---------- Period data model ----------
-  // The "May 2026" period is the live, database-backed set of records.
-  // Any additional periods loaded via CSV (see "+ Add period") are session-only
-  // comparison snapshots, same as before — they are never sent to the server.
-  const LIVE_PERIOD = 'May 2026';
+  // Every period is database-backed now — "May 2026" (the original, is_live
+  // period) plus any period added via "+ Add period" (CSV) or "Add Period
+  // with Claude" (JSON), which are saved to Postgres the moment they're
+  // loaded so they show up in every browser, not just this session. Only the
+  // is_live period is protected from being deleted or overwritten-by-label.
   let periods = {};
   let periodOrder = [];
 
-  function makePeriod(label, rawArray, opts){
-    const persisted = !!(opts && opts.persisted);
-    const basis = rawArray.map((p, i) => {
-      const item = { _id: persisted ? String(p.id) : (label + '__' + i), name: p.name, land: p.land, building: p.building, accdep: p.accdep, address: p.address || null, basis: 0, notes: '' };
+  // `period` is the shape returned by the API: { id, label, asOf, isLive, basis: [...] }
+  function makePeriod(period){
+    const basis = period.basis.map((p) => {
+      const item = { _id: String(p.id), name: p.name, land: p.land, building: p.building, accdep: p.accdep, address: p.address || null, basis: 0, notes: '' };
       recompute(item);
       return item;
     });
-    periods[label] = {
+    periods[period.label] = {
+      id: period.id,
+      asOf: period.asOf || null,
+      isLive: !!period.isLive,
       basis: basis,
       original: deepCopy(basis),
       originalMap: null,
-      persisted: persisted,
     };
-    periods[label].originalMap = new Map(periods[label].original.map(x => [x._id, x]));
-    periodOrder.push(label);
+    periods[period.label].originalMap = new Map(periods[period.label].original.map(x => [x._id, x]));
+    periodOrder.push(period.label);
   }
 
-  let currentPeriod = LIVE_PERIOD;
+  // Replaces a period already held locally (same label) with a freshly-saved
+  // one from the server, keeping its position in the tab order — used after
+  // an overwrite-by-label so the tab doesn't visibly jump to the end.
+  function upsertLocalPeriod(saved){
+    const existingIndex = periodOrder.indexOf(saved.label);
+    if (existingIndex === -1){
+      makePeriod(saved);
+      return;
+    }
+    delete periods[saved.label];
+    periodOrder.splice(existingIndex, 1);
+    makePeriod(saved);
+    const newIndex = periodOrder.indexOf(saved.label);
+    periodOrder.splice(newIndex, 1);
+    periodOrder.splice(existingIndex, 0, saved.label);
+  }
+
+  function livePeriodLabel(){
+    return periodOrder.find(l => periods[l].isLive);
+  }
+
+  let currentPeriod = null;
   let notRelevant = [];
   let notIncluded = [];
   let addressByName = {};
@@ -1326,21 +1354,18 @@
           ${periodOrder.map(label => `
             <div class="period-pill ${label===currentPeriod?'active':''}">
               <span class="period-pill-label" data-period="${label}">${label}<span class="pcount">${periods[label].basis.length}</span></span>
-              ${!periods[label].persisted ? `<button class="period-pill-delete" data-delete-period="${label}" title="Delete this period">×</button>` : ''}
+              ${!periods[label].isLive ? `<button class="period-pill-delete" data-delete-period="${label}" title="Delete this period">×</button>` : ''}
             </div>
           `).join('')}
         </div>
         <div class="period-actions">
-          ${periods[currentPeriod].persisted ? `<button class="ghost-btn" id="addPropertyBtn">+ Add property</button>` : ''}
+          <button class="ghost-btn" id="addPropertyBtn">+ Add property</button>
           <button class="ghost-btn" id="addPeriodBtn">+ Add period</button>
           <button class="ghost-btn" id="yardiPromptBtn" title="Get a copyable Claude prompt that pulls Yardi Breeze balance sheet data and loads it in as a new period">Add Period with Claude</button>
           <button class="ghost-btn" id="exportSnapshotBtn" title="Download a formatted Excel workbook of the full dashboard">Export snapshot (Excel)</button>
-          <button class="ghost-btn" id="importSnapshotBtn" title="Load a previously saved JSON comparison snapshot">Import snapshot</button>
-          <input type="file" id="importSnapshotFile" accept="application/json" style="display:none">
           ${hasEdits ? `<button class="ghost-btn warn" id="resetEditsBtn">Reset edits (${currentPeriod})</button>` : ''}
         </div>
       </div>
-      ${periods[currentPeriod].persisted ? `
       <div class="add-period-panel" id="addPropertyPanel" style="display:${addPropertyOpen?'flex':'none'}">
         <input type="text" id="propNameInput" placeholder="Property name">
         <input type="text" inputmode="decimal" id="propLandInput" placeholder="Land">
@@ -1350,7 +1375,6 @@
         <button class="ghost-btn" id="cancelNewPropertyBtn">Cancel</button>
         <div class="panel-error" id="addPropertyError"></div>
       </div>
-      ` : ''}
       <div class="add-period-panel" id="addPeriodPanel" style="display:${addPeriodOpen?'flex':'none'}">
         <input type="text" id="periodLabelInput" placeholder="Period label (e.g., June 2026 or Q3 2026)">
         <input type="file" id="periodFileInput" accept=".csv">
@@ -1425,7 +1449,7 @@
               </div>
               ${p.notes ? `<div class="notebox ${p._markType==='land'||p._markType==='building'?'neutral':''}">${p.notes}</div>` : ''}
               <div class="edit-hint">Click any Land, Building, or Accum. Dep. value above to edit it — Basis recalculates automatically.</div>
-              ${periods[currentPeriod].persisted ? `<button class="ghost-btn warn delete-property-btn" data-delete-id="${p._id}" style="margin-top:10px">Delete this property</button>` : ''}
+              <button class="ghost-btn warn delete-property-btn" data-delete-id="${p._id}" style="margin-top:10px">Delete this property</button>
             </div>
           </td>
         </tr>
@@ -1490,7 +1514,7 @@
     const loadBtn = document.getElementById('loadPeriodBtn');
     if (loadBtn) loadBtn.addEventListener('click', ()=> handleLoadPeriod(container));
 
-    // Add property (only offered on the live, database-backed period)
+    // Add property (every period is database-backed now)
     const addPropertyBtn = document.getElementById('addPropertyBtn');
     if (addPropertyBtn) addPropertyBtn.addEventListener('click', ()=>{
       addPropertyOpen = !addPropertyOpen;
@@ -1505,15 +1529,10 @@
     if (savePropertyBtn) savePropertyBtn.addEventListener('click', ()=> handleAddProperty(container));
 
     // Reset edits — reverts every edited value back to what was originally
-    // loaded, both on screen and (for the live period) in the database.
+    // loaded, both on screen and in the database.
     const resetBtn = document.getElementById('resetEditsBtn');
     if (resetBtn) resetBtn.addEventListener('click', async ()=>{
       const per = periods[currentPeriod];
-      if (!per.persisted){
-        per.basis = deepCopy(per.original);
-        renderBasisPanel(container);
-        return;
-      }
       const edited = per.basis.filter(item => {
         const o = per.originalMap.get(item._id);
         return o && (o.land !== item.land || o.building !== item.building || o.accdep !== item.accdep);
@@ -1533,12 +1552,8 @@
       }
     });
 
-    // Export / import snapshot
+    // Export snapshot
     document.getElementById('exportSnapshotBtn').addEventListener('click', exportSnapshot);
-    document.getElementById('importSnapshotBtn').addEventListener('click', ()=>{
-      document.getElementById('importSnapshotFile').click();
-    });
-    document.getElementById('importSnapshotFile').addEventListener('change', (e)=> handleImportSnapshot(e, container));
 
     // Row expand + inline editing + delete (event delegation)
     const tbody = document.getElementById('basisBody');
@@ -1577,7 +1592,7 @@
     const saveBtn = document.getElementById('saveNewPropertyBtn');
     saveBtn.disabled = true;
     try {
-      const created = await api.create({ category: 'basis', name, land, building, accdep });
+      const created = await api.create({ category: 'basis', name, land, building, accdep, periodId: periods[currentPeriod].id });
       const per = periods[currentPeriod];
       const item = { _id: String(created.id), name: created.name, land: created.land, building: created.building, accdep: created.accdep, address: created.address || null, basis: 0, notes: '' };
       recompute(item);
@@ -1631,14 +1646,12 @@
       recompute(item);
       renderBasisPanel(container);
       if (val === prevVal) return;
-      if (periods[currentPeriod].persisted){
-        api.update(item._id, { [field]: val }).catch(err => {
-          alert('Could not save change: ' + err.message + ' — reverting.');
-          item[field] = prevVal;
-          recompute(item);
-          renderBasisPanel(container);
-        });
-      }
+      api.update(item._id, { [field]: val }).catch(err => {
+        alert('Could not save change: ' + err.message + ' — reverting.');
+        item[field] = prevVal;
+        recompute(item);
+        renderBasisPanel(container);
+      });
     }
     input.addEventListener('blur', commit);
     input.addEventListener('keydown', (ev)=>{
@@ -1653,11 +1666,14 @@
     const label = document.getElementById('periodLabelInput').value.trim();
     const fileInput = document.getElementById('periodFileInput');
     if (!label){ errorBox.textContent = 'Enter a period label first.'; return; }
-    if (periods[label]){ errorBox.textContent = `"${label}" already exists — choose a different label.`; return; }
+    const existing = periods[label];
+    if (existing && existing.isLive){ errorBox.textContent = `"${label}" is the live period and can't be overwritten this way.`; return; }
     if (!fileInput.files || !fileInput.files[0]){ errorBox.textContent = 'Choose a CSV file to load.'; return; }
+    if (existing && !confirm(`A period called "${label}" is already saved. Uploading this CSV will replace its saved values for everyone. Continue?`)) return;
     const file = fileInput.files[0];
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
+      const loadBtn = document.getElementById('loadPeriodBtn');
       try {
         const rows = parseCSV(e.target.result);
         if (rows.length < 2) throw new Error('The file appears to be empty.');
@@ -1676,30 +1692,39 @@
           accdep: accdepIdx > -1 ? (parseNumber(r[accdepIdx]) !== null ? Math.abs(parseNumber(r[accdepIdx])) : null) : null,
         })).filter(p => p.name);
         if (rawArray.length === 0) throw new Error('No property rows found in the file.');
-        makePeriod(label, rawArray);
+        if (loadBtn){ loadBtn.disabled = true; loadBtn.textContent = 'Saving…'; }
+        const saved = await api.createPeriod({ label, properties: rawArray });
+        upsertLocalPeriod(saved);
         currentPeriod = label;
         addPeriodOpen = false;
         renderTabs();
         renderBasisPanel(container);
       } catch (err){
         errorBox.textContent = 'Could not load file: ' + err.message;
+        if (loadBtn){ loadBtn.disabled = false; loadBtn.textContent = 'Load period'; }
       }
     };
     reader.onerror = () => { errorBox.textContent = 'Could not read the file.'; };
     reader.readAsText(file);
   }
 
-  // Deletes one period by its exact label — never a fuzzy/substring match,
-  // so deleting "June 2026" can never touch a separately-loaded "Jun 2026".
-  // The live, database-backed period can't be removed this way.
-  function handleDeletePeriod(label, container){
+  // Deletes one period (and every basis row on it) from the database —
+  // exact label match only, so deleting "June 2026" can never touch a
+  // separately-loaded "Jun 2026". The live period can't be removed this way.
+  async function handleDeletePeriod(label, container){
     const per = periods[label];
-    if (!per || per.persisted) return;
-    if (!confirm(`Delete the "${label}" period? It only exists in this browser session (nothing is saved to the database), and this cannot be undone.`)) return;
+    if (!per || per.isLive) return;
+    if (!confirm(`Delete the "${label}" period? This removes it from the database for everyone, and cannot be undone.`)) return;
+    try {
+      await api.deletePeriod(label);
+    } catch (err){
+      alert('Could not delete period: ' + err.message);
+      return;
+    }
     delete periods[label];
     periodOrder = periodOrder.filter(l => l !== label);
     if (currentPeriod === label){
-      currentPeriod = periodOrder.includes(LIVE_PERIOD) ? LIVE_PERIOD : (periodOrder[0] || LIVE_PERIOD);
+      currentPeriod = livePeriodLabel() || periodOrder[0];
     }
     renderTabs();
     renderBasisPanel(container);
@@ -2098,7 +2123,7 @@
   // Claude pulls figures for exactly these properties, not a guess at "every
   // property/entity" in Yardi.
   function yardiTrackedPropertyNames(){
-    return periods[LIVE_PERIOD].basis.map(p => p.name);
+    return periods[livePeriodLabel()].basis.map(p => p.name);
   }
 
   function buildYardiPrompt(periodsList, domain, propertyNames){
@@ -2400,10 +2425,12 @@ Include one object in the "periods" array for each period listed above (${period
   }
 
   // Loads the JSON Claude sends back in response to the Yardi Pull Prompt
-  // (see buildYardiPrompt) — one new period tab per entry in "periods". A
-  // label that matches a period already loaded this session is replaced in
-  // place; the live, database-backed period can never be overwritten here.
-  function handleYardiJsonLoad(){
+  // (see buildYardiPrompt) — saves one period to the database per entry in
+  // "periods", so it's there next time anyone opens the dashboard. A label
+  // that matches a period already saved is replaced in place (exact-label
+  // match only — loading "Jun 2026" never touches "June 2026"); the live
+  // period can never be overwritten here.
+  async function handleYardiJsonLoad(){
     yardiJsonError = '';
     yardiJsonStatus = '';
     const raw = (yardiJsonPaste || '').trim();
@@ -2425,74 +2452,70 @@ Include one object in the "periods" array for each period listed above (${period
       renderYardiModal();
       return;
     }
+
+    // Validate and normalize every period up front, before saving anything.
+    const toSave = [];
+    for (const p of payload.periods){
+      if (!p || typeof p.label !== 'string' || !p.label.trim()){
+        yardiJsonError = 'One of the periods is missing a "label".';
+        renderYardiModal();
+        return;
+      }
+      const label = p.label.trim();
+      if (!Array.isArray(p.properties) || !p.properties.length){
+        yardiJsonError = `"${label}" has no "properties" array.`;
+        renderYardiModal();
+        return;
+      }
+      if (periods[label] && periods[label].isLive){
+        yardiJsonError = `"${label}" is the live period and can't be overwritten this way.`;
+        renderYardiModal();
+        return;
+      }
+      const rawArray = p.properties.filter(item => item && item.name).map(item => ({
+        name: item.name,
+        address: item.address || null,
+        land: parseNumber(item.land),
+        building: parseNumber(item.building),
+        accdep: parseNumber(item.accdep) !== null ? Math.abs(parseNumber(item.accdep)) : null,
+      }));
+      if (!rawArray.length){
+        yardiJsonError = `"${label}" has no named properties in it.`;
+        renderYardiModal();
+        return;
+      }
+      toSave.push({ label, asOf: p.asOf || null, properties: rawArray });
+    }
+
+    const overwriting = toSave.filter(p => periods[p.label]).map(p => p.label);
+    if (overwriting.length){
+      const list = overwriting.map(l => `"${l}"`).join(', ');
+      if (!confirm(`${list} ${overwriting.length>1?'are':'is'} already saved. Loading this JSON will replace ${overwriting.length>1?'their':'its'} saved values for everyone. Continue?`)) return;
+    }
+
+    const loadBtn = document.getElementById('yardiLoadJsonBtn');
+    if (loadBtn){ loadBtn.disabled = true; loadBtn.textContent = 'Saving…'; }
     try {
       const added = [], updated = [];
-      payload.periods.forEach(p => {
-        if (!p || typeof p.label !== 'string' || !p.label.trim()) throw new Error('One of the periods is missing a "label".');
-        const label = p.label.trim();
-        if (!Array.isArray(p.properties) || !p.properties.length) throw new Error(`"${label}" has no "properties" array.`);
-        const rawArray = p.properties.filter(item => item && item.name).map(item => ({
-          name: item.name,
-          address: item.address || null,
-          land: parseNumber(item.land),
-          building: parseNumber(item.building),
-          accdep: parseNumber(item.accdep) !== null ? Math.abs(parseNumber(item.accdep)) : null,
-        }));
-        if (!rawArray.length) throw new Error(`"${label}" has no named properties in it.`);
-        // Exact-label match only — loading "Jun 2026" never touches "June 2026".
-        const existingIndex = periodOrder.indexOf(label);
-        if (existingIndex !== -1){
-          if (periods[label].persisted) throw new Error(`"${label}" is the live database period and can't be overwritten this way.`);
-          delete periods[label];
-          periodOrder.splice(existingIndex, 1);
-          makePeriod(label, rawArray);
-          const newIndex = periodOrder.indexOf(label);
-          periodOrder.splice(newIndex, 1);
-          periodOrder.splice(existingIndex, 0, label);
-          updated.push(label);
-        } else {
-          makePeriod(label, rawArray);
-          added.push(label);
-        }
-        currentPeriod = label;
-      });
+      for (const p of toSave){
+        const saved = await api.createPeriod(p);
+        upsertLocalPeriod(saved);
+        (saved.replaced ? updated : added).push(p.label);
+        currentPeriod = p.label;
+      }
       yardiJsonPaste = '';
       const parts = [];
-      if (added.length) parts.push(`added "${added.join('", "')}"`);
+      if (added.length) parts.push(`saved "${added.join('", "')}"`);
       if (updated.length) parts.push(`replaced "${updated.join('", "')}"`);
       closeYardiModal();
       renderTabs();
       renderBasisPanel(yardiModalContainer);
-      alert(`Loaded into the dashboard — ${parts.join(' and ')}.`);
+      alert(`Saved to the database — ${parts.join(' and ')}.`);
     } catch (err){
       yardiJsonError = err.message;
+      if (loadBtn){ loadBtn.disabled = false; loadBtn.textContent = 'Load into dashboard'; }
       renderYardiModal();
     }
-  }
-
-  function handleImportSnapshot(e, container){
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const payload = JSON.parse(ev.target.result);
-        if (!payload.periods || !payload.periodOrder) throw new Error('Not a recognized snapshot file.');
-        periods = {};
-        periodOrder = [];
-        payload.periodOrder.forEach(label => {
-          const rawArray = payload.periods[label].basis.map(p => ({ name: p.name, land: p.land, building: p.building, accdep: p.accdep }));
-          makePeriod(label, rawArray);
-        });
-        currentPeriod = periodOrder[0];
-        renderTabs();
-        renderPanel();
-      } catch (err){
-        alert('Could not import snapshot: ' + err.message);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
   }
 
   // ---------- Not Relevant / Not Included ----------
@@ -2879,15 +2902,16 @@ Include one object in the "periods" array for each period listed above (${period
       const data = await api.list();
       periods = {};
       periodOrder = [];
-      makePeriod(LIVE_PERIOD, data.basis, { persisted: true });
-      currentPeriod = LIVE_PERIOD;
+      data.periods.forEach(period => makePeriod(period));
+      currentPeriod = livePeriodLabel() || periodOrder[0];
       notRelevant = data.not_relevant.map(r => ({ _id: String(r.id), name: r.name, extra: r.extra || '' }));
       notIncluded = data.not_included.map(r => ({ _id: String(r.id), name: r.name }));
-      // Name -> address fallback, so addresses still show up for any
-      // CSV-loaded comparison period whose property names match the database
-      // (matching the old behavior of the global ADDRESS_LOOKUP table).
+      // Name -> address fallback, so addresses still show up for any period
+      // whose CSV/JSON import didn't include one but another period's record
+      // for that same property name did (matching the old behavior of the
+      // global ADDRESS_LOOKUP table).
       addressByName = {};
-      [...data.basis, ...data.not_relevant, ...data.not_included].forEach(r => {
+      [...data.periods.flatMap(p => p.basis), ...data.not_relevant, ...data.not_included].forEach(r => {
         if (r.address) addressByName[r.name] = r.address;
       });
       showApp();

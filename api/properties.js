@@ -1,5 +1,7 @@
-// GET  /api/properties  -> { basis: [...], not_relevant: [...], not_included: [...] }
-// POST /api/properties  -> create a new record, body: { category, name, land?, building?, accdep?, address?, extra? }
+// GET  /api/properties  -> { periods: [{ id, label, asOf, isLive, basis: [...] }], not_relevant: [...], not_included: [...] }
+// POST /api/properties  -> create a new record, body: { category, name, land?, building?, accdep?, address?, extra?, periodId? }
+//   periodId is required when category is 'basis' (which period this property belongs to);
+//   ignored for 'not_relevant'/'not_included', which are global.
 
 const { listAll, create } = require('../lib/properties');
 const { requireAuth } = require('../lib/auth');
