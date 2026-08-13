@@ -2263,7 +2263,7 @@
     if (!periodsList.length){
       return 'Add at least one month, quarter, or year above to generate the prompt.';
     }
-    return `The Balance Sheet PDF(s) I've given you are Yardi Breeze exports for Triangle Investments' basis properties (from the "Basis Properties" packet). First confirm you can actually open and read them — if there's nothing there, stop and tell me instead of guessing at numbers.
+    return `The Balance Sheet PDF(s) I've given you are Yardi Breeze exports for Triangle Investments' basis properties (from the "Basis Balance Sheet" packet). First confirm you can actually open and read them — if there's nothing there, stop and tell me instead of guessing at numbers.
 
 Read every property's Balance Sheet in the file(s). For each property, record:
 - "name": the property name as printed on its report — but change any curly apostrophe (’) to a straight ('), and fix the typo "Statunton" to "Staunton".
@@ -2445,7 +2445,7 @@ Include every property found (one entry each), and one period object per as-of d
           </div>
           <div class="yardi-modal-body">
             <div class="yardi-info-banner">
-              <b>Before you run this:</b> Claude only sees what you give it. Generate the Basis Properties Balance Sheet packet in Yardi for the month(s) you want, save the PDF(s), and attach them to your Claude session — or connect their folder in Cowork. This dashboard reads the <b>Balance Sheet</b> report, not the Trial Balance. Claude records whatever basis properties are in the report, so keep your Yardi "Basis Properties" list current and the dashboard stays in sync.
+              <b>Before you run this:</b> Claude only sees what you give it. Generate the Basis Balance Sheet packet in Yardi for the month(s) you want, save the PDF(s), and attach them to your Claude session — or connect their folder in Cowork. This dashboard reads the <b>Balance Sheet</b> report, not the Trial Balance. Claude records whatever basis properties are in the report, so keep your Yardi "Basis Properties" list current and the dashboard stays in sync.
             </div>
 
             <div class="yardi-mode-toggle" id="yardiModeToggle">
