@@ -483,20 +483,6 @@
     background: rgba(0,0,0,0.07);
     padding: 1px 5px; border-radius: 3px;
   }
-  .yardi-domain-row{
-    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
-    margin-top: 10px; font-size: 12.5px;
-  }
-  .yardi-domain-row input{
-    font-family:'IBM Plex Mono', monospace;
-    font-size: 12.5px;
-    padding: 5px 8px;
-    border: 1px solid var(--paper-line);
-    border-radius: 3px;
-    background:#fff;
-    flex: 1; min-width: 160px;
-  }
-
   .yardi-mode-toggle{
     display:inline-flex; border: 1px solid var(--paper-line);
     border-radius: 4px; overflow:hidden; margin-bottom: 14px;
@@ -1439,7 +1425,6 @@
   let yardiModalOpen = false;
   let yardiPeriodMode = 'month';
   let yardiPeriods = [];
-  let yardiDomain = '100115409.breeze.cafe';
   let yardiCopyState = 'idle';
   let yardiJsonPaste = '';
   let yardiJsonStatus = '';
@@ -2268,69 +2253,49 @@
     if (yardiModalOpen && e.key === 'Escape') closeYardiModal();
   });
 
-  // The specific list of properties tracked on this dashboard (the live,
-  // database-backed period) — this is what gets baked into the prompt so
-  // Claude pulls figures for exactly these properties, not a guess at "every
-  // property/entity" in Yardi.
-  function yardiTrackedPropertyNames(){
-    return periods[livePeriodLabel()].basis.map(p => p.name);
-  }
-
-  function buildYardiPrompt(periodsList, domain, propertyNames){
+  // Yardi's "Basis Properties" Balance Sheet packet (exported as PDF and
+  // attached to a separate Claude session) is now the source of truth for
+  // which properties get pulled — this dashboard no longer seeds the prompt
+  // with its own tracked-property list. The month/quarter/year picker above
+  // is left in as a convenience for the user, but the prompt itself derives
+  // its periods from each PDF's "as of" date, not from what's picked here.
+  function buildYardiPrompt(periodsList){
     if (!periodsList.length){
       return 'Add at least one month, quarter, or year above to generate the prompt.';
     }
-    const domainText = (domain || '').trim() || '[your Yardi Breeze domain]';
-    const periodLines = periodsList.map(p => `- ${p.label} (Balance Sheet as of ${p.asOf})`).join('\n');
-    const periodLabels = periodsList.map(p => p.label).join(', ');
-    const example = periodsList[0];
-    const names = propertyNames && propertyNames.length ? propertyNames : ['123 Main St'];
-    const propertyLines = names.map(n => `- ${n}`).join('\n');
+    return `The Balance Sheet PDF(s) I've given you are Yardi Breeze exports for Triangle Investments' basis properties (from the "Basis Properties" packet). First confirm you can actually open and read them — if there's nothing there, stop and tell me instead of guessing at numbers.
 
-    return `You have access to Yardi Breeze in this browser for Triangle Investments, logged in at https://${domainText}. Before doing anything else, confirm you can actually reach that Yardi Breeze account in this session — if you're not logged in, stop and tell me instead of guessing at numbers.
+Read every property's Balance Sheet in the file(s). For each property, record:
+- "name": the property name as printed on its report — but change any curly apostrophe (’) to a straight ('), and fix the typo "Statunton" to "Staunton".
+- "address": the address if the report shows one, otherwise null.
+- "land": the Land balance, or null if there is no Land line.
+- "building": the Buildings balance, or null if there is none.
+- "accdep": the Accumulated Depreciation balance as a POSITIVE number (the size of the deduction), or null if there is none.
 
-For each period listed below, open the **Balance Sheet** report in Yardi Breeze (NOT the Trial Balance), run it as of that period's last day. Pull figures for exactly the properties in MY LIST below — do not skip any, and do not add ones that aren't on it. For each one, record:
-
-- Land balance (otherwise null)
-- Building balance (Yardi may label this "Buildings") (otherwise null)
-- Accumulated Depreciation balance, as a positive number — the size of the deduction (otherwise null)
-- Property address, if it's shown on the property record (otherwise null)
-
-Match properties by name even if Yardi's spelling, punctuation, or apostrophes differ slightly (curly vs. straight apostrophes, minor typos, etc.) — always use MY spelling from the list below in your output, not Yardi's. If a property on my list genuinely has no matching entity in Yardi, still include it in the output with land/building/accdep all null rather than leaving it out.
-
-If you notice a property on the Balance Sheet that ISN'T on my list, don't pull figures for it — just note its name under "notRelevant" with a short reason (e.g. "Not on my tracked property list").
-
-Periods to pull:
-${periodLines}
-
-Properties to pull (pull every one of these, in this exact order, using this exact spelling in your output):
-${propertyLines}
+Group results into periods by each report's "as of" date — one period per distinct date, with "label" like "August 2026" and "asOf" like "2026-08-31".
 
 Rules:
-- Pull real figures straight from the Balance Sheet report for that exact period — never estimate, average, or carry a number forward from another period.
-- If a property is missing an account entirely, use null for that field rather than 0.
-- Accumulated Depreciation should be a positive number (the size of the deduction), not negative.
+- Use the real figures on each report — never estimate, average, or carry a number from another report or period.
+- A missing account line means null, not 0.
+- If the same property appears more than once (it can be listed under two owners), it is the same balance — record it once.
+- The reports are Cash basis; that is correct for Land, Buildings, and Accumulated Depreciation (identical to Accrual) — do not adjust the numbers.
 
-Respond with **only** a single JSON object — no other text before or after it, no markdown headers, just the JSON (a fenced \`\`\`json code block is fine) — in exactly this shape:
+Reply with ONLY a single JSON object — no other text before or after it — in exactly this shape:
 
-\`\`\`json
 {
   "periods": [
     {
-      "label": "${example.label}",
-      "asOf": "${example.asOf}",
+      "label": "August 2026",
+      "asOf": "2026-08-31",
       "properties": [
-        { "name": "${names[0]}", "address": "123 Main St, Raleigh, NC", "land": 100000, "building": 200000, "accdep": 50000 }
+        { "name": "Center - Gander", "address": null, "land": 100000, "building": 200000, "accdep": 50000 }
       ],
-      "notRelevant": [
-        { "name": "HOA Reserve Fund", "note": "Not on my tracked property list" }
-      ]
+      "notRelevant": []
     }
   ]
 }
-\`\`\`
 
-Include one object in the "periods" array for each period listed above (${periodLabels}), and one entry in that period's "properties" array for every property listed above. Once you have this JSON, send it back to me — I'll paste it (or attach it as a .json file) into the Property Basis Record dashboard to load it in as a new period.`;
+Include every property found (one entry each), and one period object per as-of date. Leave "notRelevant" as [] unless a report is clearly not a tracked property, in which case list its name there with a short reason. Then send the JSON back so I can load it into the dashboard.`;
   }
 
   function renderYardiPickerInputs(){
@@ -2466,8 +2431,7 @@ Include one object in the "periods" array for each period listed above (${period
     const root = document.getElementById('yardiModalRoot');
     if (!yardiModalOpen){ root.innerHTML = ''; return; }
 
-    const propertyNames = yardiTrackedPropertyNames();
-    const promptText = buildYardiPrompt(yardiPeriods, yardiDomain, propertyNames);
+    const promptText = buildYardiPrompt(yardiPeriods);
 
     root.innerHTML = `
       <div class="yardi-overlay" id="yardiOverlay">
@@ -2475,17 +2439,13 @@ Include one object in the "periods" array for each period listed above (${period
           <div class="yardi-modal-header">
             <div>
               <p class="yardi-modal-title">Add Period with Claude</p>
-              <p class="yardi-modal-sub">Step 1 — pick the months, quarters, or years you want pulled, then copy the prompt into a Claude session with Yardi Breeze open. Step 2 — bring its JSON response back here to load it in as a new period.</p>
+              <p class="yardi-modal-sub">Step 1 — pick the month(s) you want and copy the prompt, then run it in a Claude session with the Basis Properties Balance Sheet PDF(s) attached (or their folder connected in Cowork). Step 2 — bring Claude's JSON response back here to load it in as a new period.</p>
             </div>
             <button class="yardi-modal-close" id="yardiCloseBtn" aria-label="Close">×</button>
           </div>
           <div class="yardi-modal-body">
             <div class="yardi-info-banner">
-              <b>Before you paste this in:</b> that Claude session can only see what you give it access to — it needs Yardi Breeze open and logged in in its own browser. This dashboard reads the <b>Balance Sheet</b> report, not the Trial Balance. The prompt already lists the ${propertyNames.length} properties tracked on this dashboard, so Claude pulls figures for exactly those — nothing more, nothing less.
-              <div class="yardi-domain-row">
-                <span>Yardi Breeze domain:</span>
-                <input type="text" id="yardiDomainInput" value="${escapeHtml(yardiDomain)}" spellcheck="false">
-              </div>
+              <b>Before you run this:</b> Claude only sees what you give it. Generate the Basis Properties Balance Sheet packet in Yardi for the month(s) you want, save the PDF(s), and attach them to your Claude session — or connect their folder in Cowork. This dashboard reads the <b>Balance Sheet</b> report, not the Trial Balance. Claude records whatever basis properties are in the report, so keep your Yardi "Basis Properties" list current and the dashboard stays in sync.
             </div>
 
             <div class="yardi-mode-toggle" id="yardiModeToggle">
@@ -2531,15 +2491,6 @@ Include one object in the "periods" array for each period listed above (${period
       if (e.target.id === 'yardiOverlay') closeYardiModal();
     });
     document.getElementById('yardiCloseBtn').addEventListener('click', closeYardiModal);
-    document.getElementById('yardiDomainInput').addEventListener('input', (e) => {
-      yardiDomain = e.target.value;
-      const inp = e.target;
-      const pos = inp.selectionStart;
-      renderYardiModal();
-      const newInp = document.getElementById('yardiDomainInput');
-      newInp.focus();
-      newInp.setSelectionRange(pos, pos);
-    });
     document.getElementById('yardiModeToggle').querySelectorAll('button').forEach(btn => {
       btn.addEventListener('click', () => {
         yardiPeriodMode = btn.dataset.mode;
