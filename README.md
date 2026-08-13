@@ -129,20 +129,22 @@ mirrors the whole dashboard:
 "Add Period with Claude" opens a two-step modal.
 
 **Step 1 — build the prompt.** Pick one or more months, quarters, or years
-(individually or as a range); the modal produces a copyable prompt for a
-*separate* Claude session — one with Yardi Breeze open and logged in in its
-own browser, since this dashboard's own session can't reach it. The prompt:
+(individually or as a range) — this is just a convenience for you, the
+prompt itself doesn't depend on it. Copy the prompt into a *separate* Claude
+session with the Yardi "Basis Properties" Balance Sheet PDF(s) attached (or
+their folder connected in Cowork), since this dashboard's own session can't
+reach Yardi directly. The prompt:
 
-- Has that session confirm it can actually reach Yardi Breeze before doing
-  anything else.
-- Bakes in the exact list of properties currently tracked on this dashboard
-  (the live period's property names) and asks it to pull Land, Building, and
-  Accumulated Depreciation for precisely that list from Yardi Breeze's
-  **Balance Sheet** report (not the Trial Balance), as of each selected
-  period's last day — matching Yardi's naming loosely (typos, curly
-  apostrophes, etc.) but keeping this dashboard's spelling in the output.
+- Has that session confirm it can actually open the attached PDF(s) before
+  doing anything else.
+- Reads every property's Balance Sheet in the file(s) — the Yardi "Basis
+  Properties" packet is the source of truth for which properties are
+  tracked, so the prompt no longer enumerates them itself — normalizing
+  curly apostrophes and the "Statunton"/"Staunton" typo along the way.
+- Groups results into one period per distinct "as of" date found across the
+  PDFs (rather than the months you picked above).
 - Asks for a single JSON object (shape shown in the modal) covering every
-  requested period.
+  period found.
 
 **Step 2 — load the response back in.** Paste that JSON straight into the
 text box, or attach it as a `.json` file, and click "Load into dashboard."
