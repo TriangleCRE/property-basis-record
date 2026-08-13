@@ -24,6 +24,15 @@
     --shadow: rgba(38,47,39,0.08);
     --edit-bg: #FFF7DC;
 
+    /* Trends chart series — validated as a categorical set (see
+       scripts/validate_palette.js in the dataviz skill): all three pass the
+       lightness band, chroma floor, and CVD-separation checks together.
+       Basis is drawn in --ink instead, as a bold total/reference line rather
+       than a fourth peer category (see the Trends CSS below). */
+    --chart-land: #B5651D;
+    --chart-building: #1565C0;
+    --chart-accdep: #AD1467;
+
     /* Triangle Investment Group brand colors — used on the passcode screen */
     --brand-green: #2FA84C;
     --brand-green-deep: #2C6B32;
@@ -934,6 +943,145 @@
     font-size: 14px;
   }
 
+  /* ---------- Trends tab ---------- */
+  .trend-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+  }
+  .trend-card{
+    display:block;
+    width:100%;
+    font: inherit;
+    background: var(--paper-card);
+    border: 1px solid var(--paper-line);
+    border-radius: 6px;
+    padding: 14px 16px 10px;
+    cursor:pointer;
+    text-align:left;
+    box-shadow: 0 1px 3px var(--shadow);
+    transition: border-color .1s ease, box-shadow .1s ease;
+  }
+  .trend-card:hover{ border-color: var(--sage-deep); box-shadow: 0 3px 10px var(--shadow); }
+  .trend-card:focus-visible{ outline: 2px solid var(--sage-deep); outline-offset: 2px; }
+  .trend-card-head{
+    display:flex;
+    align-items:center;
+    gap: 7px;
+    margin-bottom: 8px;
+  }
+  .trend-card-title{
+    font-weight:600;
+    font-size: 13.5px;
+    color: var(--ink);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .trend-card-basis{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+    display:flex;
+    justify-content:space-between;
+  }
+  .trend-card-basis b{ color: var(--sage-deep); }
+  .trend-empty-note{
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    font-style: italic;
+    margin-top: 6px;
+  }
+
+  .trend-legend{
+    display:flex;
+    gap: 18px;
+    flex-wrap:wrap;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin: 4px 0 16px;
+  }
+  .trend-legend .item{ display:flex; align-items:center; gap:7px; }
+  .trend-swatch{
+    display:inline-block;
+    width: 20px;
+    height: 0;
+    border-top-width: 2.5px;
+    border-top-style: solid;
+  }
+  .trend-swatch.dashed{ border-top-style: dashed; }
+  .trend-swatch.thick{ border-top-width: 3.5px; }
+
+  .trend-chart-wrap{ position:relative; }
+  .trend-tooltip{
+    position:absolute;
+    pointer-events:none;
+    background: var(--ink);
+    color: #F1EEE3;
+    font-size: 12px;
+    line-height:1.5;
+    padding: 8px 11px;
+    border-radius: 4px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    z-index: 5;
+    white-space:nowrap;
+    display:none;
+  }
+  .trend-tooltip .tt-period{
+    font-weight:600;
+    margin-bottom: 3px;
+    font-family:'IBM Plex Sans', sans-serif;
+  }
+  .trend-tooltip .tt-row{ display:flex; align-items:center; gap:6px; }
+  .trend-tooltip .tt-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; display:inline-block; }
+
+  .trend-modal-body{ padding: 20px 26px 26px; max-height: 82vh; overflow-y:auto; }
+  .trend-flag-summary{
+    display:flex;
+    flex-wrap:wrap;
+    gap: 10px;
+    margin: 4px 0 18px;
+  }
+  .trend-flag-chip{
+    display:inline-flex;
+    align-items:center;
+    gap: 6px;
+    font-size: 12.5px;
+    padding: 5px 11px 5px 8px;
+    border-radius: 14px;
+    background: var(--paper);
+    border: 1px solid var(--paper-line);
+  }
+  .trend-notable{
+    background: #FBF2D6;
+    border: 1px solid #E4CD84;
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #5C4413;
+    margin: 16px 0;
+  }
+  .trend-notable ul{ margin: 6px 0 0; padding-left: 20px; }
+  .trend-notable li{ margin-bottom: 4px; }
+  .trend-notable-empty{
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    font-style: italic;
+    margin: 16px 0;
+  }
+  .trend-table-title{
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    font-weight:600;
+    margin: 22px 0 8px;
+  }
+  .trend-table td.missing{ color: var(--ink-soft); font-style: italic; opacity:0.75; }
+  .trend-modal{ max-width: 960px; }
+
   footer{
     margin-top: 40px;
     padding-top: 18px;
@@ -1032,6 +1180,7 @@
 </div>
 
 <div id="yardiModalRoot"></div>
+<div id="trendModalRoot"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script>
@@ -1256,6 +1405,7 @@
       { id:'notrelevant', label:'Not Relevant', count: notRelevant.length },
       { id:'notincluded', label:'Not Included', count: notIncluded.length },
       { id:'compare', label:'Compare Periods', count: periodOrder.length },
+      { id:'trends', label:'Trends', count: allTrendPropertyNames().length },
     ];
   }
 
@@ -2778,6 +2928,442 @@ Include one object in the "periods" array for each period listed above (${period
     });
   }
 
+  // ---------- Trends tab ----------
+  // Builds a Land / Building / Accum. Dep. / Basis line chart per property,
+  // across every period. Every helper here reads straight from the live
+  // `periods` / `periodOrder` state on every call — there is no separate
+  // cache — so an edit made anywhere else on the dashboard (a cell edit, a
+  // new property, a new or deleted period) shows up here the next time this
+  // tab (or the expanded chart) is rendered, with no extra plumbing needed.
+
+  const MONTH_ABBR = { jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11 };
+
+  // Best-effort chronological key for a period, so charts read left-to-right
+  // in time order even for freehand CSV labels like "Q3 2026" or a bare
+  // "2026". Falls back to null (unknown) when nothing matches.
+  function parsePeriodDate(label, asOf){
+    if (asOf){
+      const d = new Date(asOf);
+      if (!isNaN(d)) return d.getTime();
+    }
+    const s = (label || '').trim();
+    let m = s.match(/^([A-Za-z]{3,})\.?\s+(\d{4})$/);
+    if (m && MONTH_ABBR[m[1].slice(0,3).toLowerCase()] !== undefined){
+      return new Date(Number(m[2]), MONTH_ABBR[m[1].slice(0,3).toLowerCase()], 1).getTime();
+    }
+    m = s.match(/^Q([1-4])\s+(\d{4})$/i);
+    if (m) return new Date(Number(m[2]), (Number(m[1]) - 1) * 3, 1).getTime();
+    m = s.match(/^(\d{4})$/);
+    if (m) return new Date(Number(m[1]), 0, 1).getTime();
+    return null;
+  }
+
+  // Every period, in best-guess chronological order. Periods whose date
+  // can't be determined keep their relative load order and sort to the end.
+  function trendPeriodsOrder(){
+    const withKeys = periodOrder.map((label, idx) => ({ label, idx, key: parsePeriodDate(label, periods[label].asOf) }));
+    withKeys.sort((a, b) => {
+      if (a.key != null && b.key != null) return a.key - b.key;
+      if (a.key != null) return -1;
+      if (b.key != null) return 1;
+      return a.idx - b.idx;
+    });
+    return withKeys.map(w => w.label);
+  }
+
+  // Every property name that appears in any period, ordered by the live
+  // period's own order first (the closest thing to a master list), then any
+  // extra names found only in other periods.
+  function allTrendPropertyNames(){
+    const seen = new Set();
+    const names = [];
+    const addFrom = (label) => {
+      periods[label].basis.forEach(p => {
+        if (!seen.has(p.name)){ seen.add(p.name); names.push(p.name); }
+      });
+    };
+    const live = livePeriodLabel();
+    if (live) addFrom(live);
+    periodOrder.forEach(addFrom);
+    return names;
+  }
+
+  // The full time series for one property, one entry per chronological
+  // period — { label, land, building, accdep, basis, notes, address, missing }.
+  // missing=true means the property wasn't on that period's Balance Sheet at
+  // all (a real gap in the line, never a zero).
+  function propertyTrendSeries(name){
+    return trendPeriodsOrder().map(label => {
+      const item = periods[label].basis.find(p => p.name === name);
+      if (!item){
+        return { label, land: null, building: null, accdep: null, basis: null, notes: '', address: null, missing: true };
+      }
+      return { label, land: item.land, building: item.building, accdep: item.accdep, basis: item.basis, notes: item.notes, address: item.address, missing: false };
+    });
+  }
+
+  // Flags a change between two consecutive periods as "notable" when it's
+  // both a meaningful share of the prior value AND a meaningful dollar
+  // amount — the combination keeps a property with a tiny land balance from
+  // generating noise ("up 200%!") while still catching genuinely large
+  // moves on properties with big balances. Tune these two if they're too
+  // chatty or too quiet in practice.
+  const TREND_CHANGE_PCT_THRESHOLD = 10;   // percentage points
+  const TREND_CHANGE_DOLLAR_FLOOR = 1000;  // ignore sub-$1,000 noise
+
+  function describeNotableChanges(series){
+    const notes = [];
+    const fields = [
+      { key: 'land', label: 'Land' },
+      { key: 'building', label: 'Building' },
+      { key: 'accdep', label: 'Accum. Dep.' },
+      { key: 'basis', label: 'Basis' },
+    ];
+    for (let i = 1; i < series.length; i++){
+      const prev = series[i - 1], cur = series[i];
+      if (prev.missing && !cur.missing){
+        notes.push(`Appears starting ${cur.label} — wasn't on the Balance Sheet in ${prev.label}.`);
+        continue;
+      }
+      if (!prev.missing && cur.missing){
+        notes.push(`Drops off the Balance Sheet in ${cur.label} (was present in ${prev.label}).`);
+        continue;
+      }
+      if (prev.missing && cur.missing) continue;
+      fields.forEach(f => {
+        const a = prev[f.key], b = cur[f.key];
+        if (a == null || b == null){
+          if (a == null && b != null) notes.push(`${f.label} goes from no account to ${fmt(b)} between ${prev.label} and ${cur.label}.`);
+          if (a != null && b == null) notes.push(`${f.label} account disappears between ${prev.label} and ${cur.label} (was ${fmt(a)}).`);
+          return;
+        }
+        const delta = b - a;
+        if (Math.abs(delta) < TREND_CHANGE_DOLLAR_FLOOR) return;
+        const pct = a !== 0 ? (delta / Math.abs(a)) * 100 : (b !== 0 ? Infinity : 0);
+        if (Math.abs(pct) >= TREND_CHANGE_PCT_THRESHOLD){
+          const dir = delta > 0 ? 'up' : 'down';
+          const pctText = Number.isFinite(pct) ? ` (${fmtPct(pct)})` : '';
+          notes.push(`${f.label} ${dir} ${fmt(Math.abs(delta))}${pctText} from ${prev.label} to ${cur.label} — ${fmt(a)} → ${fmt(b)}.`);
+        }
+      });
+      const prevFlag = classify(prev.land, prev.building, prev.notes);
+      const curFlag = classify(cur.land, cur.building, cur.notes);
+      if (prevFlag.type !== curFlag.type){
+        notes.push(`Status changes from "${prevFlag.label}" to "${curFlag.label}" between ${prev.label} and ${cur.label}.`);
+      }
+    }
+    return notes;
+  }
+
+  function fmtCompact(n){
+    const neg = n < 0;
+    const abs = Math.abs(n);
+    let s;
+    if (abs >= 1e6) s = '$' + (abs/1e6).toFixed(abs>=1e7?0:1) + 'M';
+    else if (abs >= 1e3) s = '$' + (abs/1e3).toFixed(0) + 'K';
+    else s = '$' + Math.round(abs);
+    return neg ? '−' + s : s;
+  }
+
+  // One shared layout (x/y scale) for a series, reused for both drawing the
+  // chart and mapping mouse position back to a period on hover, so the two
+  // are always in exact agreement.
+  function computeTrendLayout(series, width, height, pad){
+    const n = series.length;
+    const plotW = width - pad.left - pad.right;
+    const plotH = height - pad.top - pad.bottom;
+    let min = Infinity, max = -Infinity;
+    ['land','building','accdep','basis'].forEach(key => {
+      series.forEach(pt => {
+        const v = pt[key];
+        if (v != null){ if (v < min) min = v; if (v > max) max = v; }
+      });
+    });
+    if (!Number.isFinite(min) || !Number.isFinite(max)){ min = 0; max = 1; }
+    if (min === max){ min -= 1; max += 1; }
+    if (min > 0) min = 0; // always show the zero baseline — a truncated axis distorts magnitude
+    if (max < 0) max = 0;
+    const span = max - min;
+    const padded = span * 0.08;
+    const yMin = min - padded, yMax = max + padded;
+    const xForIndex = (i) => n <= 1 ? pad.left + plotW / 2 : pad.left + (plotW * i) / (n - 1);
+    const yForValue = (v) => pad.top + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
+    return { pad, plotW, plotH, xForIndex, yForValue, yMin, yMax };
+  }
+
+  // Splits a series into contiguous runs of non-null values, so a missing
+  // period (property not on that Balance Sheet) shows as a real gap in the
+  // line rather than a false interpolation across it.
+  function buildPathD(values, layout){
+    const segments = [];
+    let current = [];
+    values.forEach((v, i) => {
+      if (v == null){
+        if (current.length) segments.push(current);
+        current = [];
+        return;
+      }
+      current.push([layout.xForIndex(i), layout.yForValue(v)]);
+    });
+    if (current.length) segments.push(current);
+    return segments.map(pts => 'M' + pts.map(p => p.join(',')).join(' L '));
+  }
+
+  // Land and Building keep the marks legend's existing colors; Accum. Dep.
+  // gets a third, validated-distinct hue (see the --chart-* custom
+  // properties). Basis is drawn as a bold ink "total" line rather than a
+  // fourth peer category — its identity comes from line weight + the
+  // legend/table, not from competing for a fourth categorical hue.
+  const TREND_SERIES_DEFS = [
+    { key: 'land', label: 'Land', color: 'var(--chart-land)', width: 2, dash: null },
+    { key: 'building', label: 'Building', color: 'var(--chart-building)', width: 2, dash: null },
+    { key: 'accdep', label: 'Accum. Dep.', color: 'var(--chart-accdep)', width: 2, dash: '5,4' },
+    { key: 'basis', label: 'Basis (total)', color: 'var(--ink)', width: 3, dash: null },
+  ];
+
+  function renderMiniChartSVG(series){
+    const width = 232, height = 96;
+    const layout = computeTrendLayout(series, width, height, { top: 8, right: 8, bottom: 8, left: 8 });
+    const paths = TREND_SERIES_DEFS.map(def => {
+      const values = series.map(pt => pt[def.key]);
+      const segs = buildPathD(values, layout);
+      const lines = segs.map(d => `<path d="${d}" fill="none" stroke="${def.color}" stroke-width="${def.width}" stroke-linecap="round" stroke-linejoin="round" ${def.dash?`stroke-dasharray="${def.dash}"`:''}/>`).join('');
+      // A lone data point draws nothing as a path (zero-length "M" with no
+      // "L" renders no stroke in Chromium, even with round caps) — a small
+      // dot at every defined point keeps single-period properties visible
+      // instead of showing a blank card.
+      const dots = series.map((pt, i) => {
+        const v = pt[def.key];
+        if (v == null) return '';
+        return `<circle cx="${layout.xForIndex(i)}" cy="${layout.yForValue(v)}" r="2.5" fill="${def.color}"/>`;
+      }).join('');
+      return lines + dots;
+    }).join('');
+    return `<svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}">${paths}</svg>`;
+  }
+
+  const TREND_CHART_W = 860, TREND_CHART_H = 320;
+  const TREND_CHART_PAD = { top: 20, right: 24, bottom: 44, left: 64 };
+
+  function renderExpandedChartSVG(series, id){
+    const layout = computeTrendLayout(series, TREND_CHART_W, TREND_CHART_H, TREND_CHART_PAD);
+    const gridCount = 4;
+    let gridSvg = '';
+    for (let g = 0; g <= gridCount; g++){
+      const v = layout.yMin + (layout.yMax - layout.yMin) * (g / gridCount);
+      const y = layout.yForValue(v);
+      gridSvg += `<line x1="${TREND_CHART_PAD.left}" y1="${y}" x2="${TREND_CHART_W - TREND_CHART_PAD.right}" y2="${y}" stroke="var(--paper-line)" stroke-width="1"/>`;
+      gridSvg += `<text x="${TREND_CHART_PAD.left - 8}" y="${y}" text-anchor="end" dominant-baseline="middle" font-size="10.5" font-family="IBM Plex Mono, monospace" fill="var(--ink-soft)">${escapeHtml(fmtCompact(v))}</text>`;
+    }
+    let xLabels = '';
+    series.forEach((pt, i) => {
+      const x = layout.xForIndex(i);
+      xLabels += `<text x="${x}" y="${TREND_CHART_H - TREND_CHART_PAD.bottom + 20}" text-anchor="middle" font-size="10.5" font-family="IBM Plex Sans, sans-serif" fill="var(--ink-soft)">${escapeHtml(pt.label)}</text>`;
+    });
+    const paths = TREND_SERIES_DEFS.map(def => {
+      const values = series.map(pt => pt[def.key]);
+      const segs = buildPathD(values, layout);
+      const lines = segs.map(d => `<path d="${d}" fill="none" stroke="${def.color}" stroke-width="${def.width}" stroke-linecap="round" stroke-linejoin="round" ${def.dash?`stroke-dasharray="${def.dash}"`:''}/>`).join('');
+      const dots = series.map((pt, i) => {
+        const v = pt[def.key];
+        if (v == null) return '';
+        return `<circle cx="${layout.xForIndex(i)}" cy="${layout.yForValue(v)}" r="4" fill="${def.color}"/>`;
+      }).join('');
+      return lines + dots;
+    }).join('');
+    return `
+      <svg id="${id}" viewBox="0 0 ${TREND_CHART_W} ${TREND_CHART_H}" width="100%" height="${TREND_CHART_H}">
+        ${gridSvg}
+        ${xLabels}
+        ${paths}
+        <line id="${id}-crosshair" x1="0" y1="${TREND_CHART_PAD.top}" x2="0" y2="${TREND_CHART_H - TREND_CHART_PAD.bottom}" stroke="var(--ink-soft)" stroke-width="1" stroke-dasharray="3,3" style="display:none"/>
+        <rect id="${id}-hit" x="${TREND_CHART_PAD.left}" y="${TREND_CHART_PAD.top}" width="${layout.plotW}" height="${layout.plotH}" fill="transparent"/>
+      </svg>
+    `;
+  }
+
+  function wireExpandedChartHover(id, series, tooltipEl){
+    const svg = document.getElementById(id);
+    const hit = document.getElementById(id + '-hit');
+    const crosshair = document.getElementById(id + '-crosshair');
+    if (!svg || !hit) return;
+    const layout = computeTrendLayout(series, TREND_CHART_W, TREND_CHART_H, TREND_CHART_PAD);
+    hit.addEventListener('mousemove', (e) => {
+      const rect = svg.getBoundingClientRect();
+      const scaleX = rect.width / TREND_CHART_W;
+      const localX = (e.clientX - rect.left) / (scaleX || 1);
+      let nearest = 0, best = Infinity;
+      series.forEach((pt, i) => {
+        const d = Math.abs(layout.xForIndex(i) - localX);
+        if (d < best){ best = d; nearest = i; }
+      });
+      const x = layout.xForIndex(nearest);
+      crosshair.setAttribute('x1', x);
+      crosshair.setAttribute('x2', x);
+      crosshair.style.display = '';
+      const pt = series[nearest];
+      tooltipEl.innerHTML = `
+        <div class="tt-period">${escapeHtml(pt.label)}</div>
+        ${pt.missing ? `<div class="tt-row">Not on the Balance Sheet this period</div>` : TREND_SERIES_DEFS.map(def => `
+          <div class="tt-row"><span class="tt-dot" style="background:${def.color}"></span>${def.label}: ${pt[def.key]!=null?fmt(pt[def.key]):'—'}</div>
+        `).join('')}
+      `;
+      tooltipEl.style.display = 'block';
+      const wrap = svg.closest('.trend-chart-wrap');
+      const wrapRect = wrap.getBoundingClientRect();
+      const svgLeft = rect.left - wrapRect.left, svgTop = rect.top - wrapRect.top;
+      let left = svgLeft + (x * scaleX) + 14;
+      let top = svgTop + (e.clientY - rect.top) - 10;
+      const ttWidth = 200, ttHeight = 24 + TREND_SERIES_DEFS.length * 20;
+      if (left + ttWidth > wrapRect.width) left = svgLeft + (x * scaleX) - ttWidth - 14;
+      if (left < 0) left = 4;
+      if (top + ttHeight > wrapRect.height) top = wrapRect.height - ttHeight - 4;
+      if (top < 0) top = 0;
+      tooltipEl.style.left = left + 'px';
+      tooltipEl.style.top = top + 'px';
+    });
+    hit.addEventListener('mouseleave', () => {
+      tooltipEl.style.display = 'none';
+      crosshair.style.display = 'none';
+    });
+  }
+
+  function renderTrendLegendHTML(){
+    return TREND_SERIES_DEFS.map(def => `
+      <span class="item"><span class="trend-swatch ${def.dash?'dashed':''} ${def.width>=3?'thick':''}" style="border-top-color:${def.color}"></span>${def.label}</span>
+    `).join('');
+  }
+
+  function renderTrendsPanel(container){
+    const q = searchTerm.trim().toLowerCase();
+    const names = allTrendPropertyNames().filter(n => !q || n.toLowerCase().includes(q));
+    if (names.length === 0){
+      container.innerHTML = `<div class="empty">${searchTerm.trim() ? 'No properties match this search.' : 'No properties to chart yet.'}</div>`;
+      return;
+    }
+    container.innerHTML = `
+      <div class="trend-legend">${renderTrendLegendHTML()}</div>
+      <div class="trend-grid" id="trendGrid"></div>
+    `;
+    const grid = document.getElementById('trendGrid');
+    grid.innerHTML = names.map(name => {
+      const series = propertyTrendSeries(name);
+      const last = [...series].reverse().find(pt => !pt.missing);
+      return `
+        <button type="button" class="trend-card" data-property="${escapeHtml(name)}">
+          <div class="trend-card-head"><span class="trend-card-title" title="${escapeHtml(name)}">${escapeHtml(name)}</span></div>
+          <div class="trend-chart-wrap">${renderMiniChartSVG(series)}</div>
+          ${last ? `<div class="trend-card-basis"><span>${escapeHtml(last.label)}</span><b>${fmt(last.basis)}</b></div>` : `<div class="trend-empty-note">No data in any loaded period.</div>`}
+        </button>
+      `;
+    }).join('');
+    grid.querySelectorAll('.trend-card').forEach(card => {
+      card.addEventListener('click', () => openTrendModal(card.dataset.property));
+    });
+  }
+
+  let trendModalOpen = false;
+  let trendModalProperty = null;
+
+  function openTrendModal(name){
+    trendModalOpen = true;
+    trendModalProperty = name;
+    renderTrendModal();
+  }
+  function closeTrendModal(){
+    trendModalOpen = false;
+    renderTrendModal();
+  }
+  document.addEventListener('keydown', (e) => {
+    if (trendModalOpen && e.key === 'Escape') closeTrendModal();
+  });
+
+  function renderTrendModal(){
+    const root = document.getElementById('trendModalRoot');
+    if (!trendModalOpen || !trendModalProperty){ root.innerHTML = ''; return; }
+    const name = trendModalProperty;
+    // Always recomputed fresh from live state — never a snapshot taken when
+    // the modal was opened — so an edit made just now shows up immediately.
+    const series = propertyTrendSeries(name);
+    const notable = describeNotableChanges(series);
+    const last = [...series].reverse().find(pt => !pt.missing);
+    const address = last && last.address;
+
+    root.innerHTML = `
+      <div class="yardi-overlay" id="trendOverlay">
+        <div class="yardi-modal trend-modal">
+          <div class="yardi-modal-header">
+            <div>
+              <p class="yardi-modal-title">${escapeHtml(name)}</p>
+              ${address ? `<p class="yardi-modal-sub">${escapeHtml(address)}</p>` : ''}
+            </div>
+            <button class="yardi-modal-close" id="trendCloseBtn" aria-label="Close">×</button>
+          </div>
+          <div class="trend-modal-body">
+            <div class="trend-legend">${renderTrendLegendHTML()}</div>
+            <div class="trend-chart-wrap">
+              ${renderExpandedChartSVG(series, 'trendExpandedChart')}
+              <div class="trend-tooltip" id="trendTooltip"></div>
+            </div>
+
+            <div class="trend-flag-summary">
+              ${series.map(pt => {
+                if (pt.missing) return `<span class="trend-flag-chip">${escapeHtml(pt.label)}: <i>not on Balance Sheet</i></span>`;
+                const c = classify(pt.land, pt.building, pt.notes);
+                return `<span class="trend-flag-chip">${escapeHtml(pt.label)}: ${markHTML(c.type)} ${c.label}</span>`;
+              }).join('')}
+            </div>
+
+            ${notable.length ? `
+              <div class="trend-notable">
+                <b>Notable changes</b>
+                <ul>${notable.map(n => `<li>${escapeHtml(n)}</li>`).join('')}</ul>
+              </div>
+            ` : `<div class="trend-notable-empty">No change over ${TREND_CHANGE_PCT_THRESHOLD}% (and at least ${fmt(TREND_CHANGE_DOLLAR_FLOOR)}) between any two consecutive periods.</div>`}
+
+            <div class="trend-table-title">All recorded values</div>
+            <div class="tablewrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Period</th>
+                    <th class="num-col">Land</th>
+                    <th class="num-col">Building</th>
+                    <th class="num-col">Accum. Dep.</th>
+                    <th class="num-col">Basis</th>
+                    <th>Flag</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${series.map(pt => {
+                    if (pt.missing){
+                      return `<tr><td>${escapeHtml(pt.label)}</td><td class="num-col missing" colspan="4">Not on the Balance Sheet this period</td><td></td></tr>`;
+                    }
+                    const c = classify(pt.land, pt.building, pt.notes);
+                    return `<tr>
+                      <td>${escapeHtml(pt.label)}</td>
+                      <td class="num-col">${pt.land!=null?fmt(pt.land):'<span class="dash">—</span>'}</td>
+                      <td class="num-col">${pt.building!=null?fmt(pt.building):'<span class="dash">—</span>'}</td>
+                      <td class="num-col">${pt.accdep!=null?fmt(pt.accdep):'<span class="dash">—</span>'}</td>
+                      <td class="num-col basis-col">${fmt(pt.basis)}</td>
+                      <td>${markHTML(c.type)} ${c.label}</td>
+                    </tr>`;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('trendOverlay').addEventListener('click', (e) => {
+      if (e.target.id === 'trendOverlay') closeTrendModal();
+    });
+    document.getElementById('trendCloseBtn').addEventListener('click', closeTrendModal);
+    wireExpandedChartHover('trendExpandedChart', series, document.getElementById('trendTooltip'));
+  }
+
   // ---------- Stats ----------
   function renderStats(){
     const basis = enrichedBasis();
@@ -2835,6 +3421,13 @@ Include one object in the "periods" array for each period listed above (${period
       });
     } else if (activeTab === 'compare'){
       renderComparePanel(area);
+    } else if (activeTab === 'trends'){
+      area.innerHTML = `<div class="controls"><div class="search"><input type="text" id="searchInput4" placeholder="Search properties…" value="${searchTerm.replace(/"/g,'&quot;')}"></div></div><div id="subpanel"></div>`;
+      renderTrendsPanel(document.getElementById('subpanel'));
+      document.getElementById('searchInput4').addEventListener('input', (e)=>{
+        searchTerm = e.target.value;
+        renderTrendsPanel(document.getElementById('subpanel'));
+      });
     }
   }
 
