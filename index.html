@@ -1481,7 +1481,7 @@
     container.innerHTML = `
       <div class="period-bar">
         <div class="period-tabs" id="periodTabs">
-          ${periodOrder.map(label => `
+          ${chronologicalPeriodOrder().map(label => `
             <div class="period-pill ${label===currentPeriod?'active':''}">
               <span class="period-pill-label" data-period="${label}">${label}<span class="pcount">${periods[label].basis.length}</span></span>
               ${!periods[label].isLive ? `<button class="period-pill-delete" data-delete-period="${label}" title="Delete this period">×</button>` : ''}
@@ -2874,19 +2874,16 @@ Include every property found (one entry each), and one period object per as-of d
     });
   }
 
-  // ---------- Trends tab ----------
-  // Builds a Land / Building / Accum. Dep. / Basis line chart per property,
-  // across every period. Every helper here reads straight from the live
-  // `periods` / `periodOrder` state on every call — there is no separate
-  // cache — so an edit made anywhere else on the dashboard (a cell edit, a
-  // new property, a new or deleted period) shows up here the next time this
-  // tab (or the expanded chart) is rendered, with no extra plumbing needed.
+  // ---------- Chronological period ordering ----------
+  // Shared by the period tabs at the top of the dashboard and the Trends
+  // tab: periods should always read left-to-right / top-to-bottom in time
+  // order, however they were added or loaded.
 
   const MONTH_ABBR = { jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11 };
 
-  // Best-effort chronological key for a period, so charts read left-to-right
-  // in time order even for freehand CSV labels like "Q3 2026" or a bare
-  // "2026". Falls back to null (unknown) when nothing matches.
+  // Best-effort chronological key for a period, so it sorts in time order
+  // even for freehand CSV labels like "Q3 2026" or a bare "2026". Falls
+  // back to null (unknown) when nothing matches.
   function parsePeriodDate(label, asOf){
     if (asOf){
       const d = new Date(asOf);
@@ -2904,9 +2901,12 @@ Include every property found (one entry each), and one period object per as-of d
     return null;
   }
 
-  // Every period, in best-guess chronological order. Periods whose date
-  // can't be determined keep their relative load order and sort to the end.
-  function trendPeriodsOrder(){
+  // Every period, in best-guess chronological order — used for the period
+  // tabs strip and the Trends tab alike, so adding a period (any label,
+  // any load order) always slots it into its correct place in time rather
+  // than just appending it. Periods whose date can't be determined keep
+  // their relative load order and sort to the end.
+  function chronologicalPeriodOrder(){
     const withKeys = periodOrder.map((label, idx) => ({ label, idx, key: parsePeriodDate(label, periods[label].asOf) }));
     withKeys.sort((a, b) => {
       if (a.key != null && b.key != null) return a.key - b.key;
@@ -2916,6 +2916,14 @@ Include every property found (one entry each), and one period object per as-of d
     });
     return withKeys.map(w => w.label);
   }
+
+  // ---------- Trends tab ----------
+  // Builds a Land / Building / Accum. Dep. / Basis line chart per property,
+  // across every period. Every helper here reads straight from the live
+  // `periods` / `periodOrder` state on every call — there is no separate
+  // cache — so an edit made anywhere else on the dashboard (a cell edit, a
+  // new property, a new or deleted period) shows up here the next time this
+  // tab (or the expanded chart) is rendered, with no extra plumbing needed.
 
   // Every property name that appears in any period, ordered by the live
   // period's own order first (the closest thing to a master list), then any
@@ -2939,7 +2947,7 @@ Include every property found (one entry each), and one period object per as-of d
   // missing=true means the property wasn't on that period's Balance Sheet at
   // all (a real gap in the line, never a zero).
   function propertyTrendSeries(name){
-    return trendPeriodsOrder().map(label => {
+    return chronologicalPeriodOrder().map(label => {
       const item = periods[label].basis.find(p => p.name === name);
       if (!item){
         return { label, land: null, building: null, accdep: null, basis: null, notes: '', address: null, missing: true };
