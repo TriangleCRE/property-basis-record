@@ -1438,12 +1438,31 @@
     });
   }
 
+  // The best address known for a property: its own value for the current
+  // period if set, otherwise the sticky address known from any other period
+  // (see addressByName below) — the same fallback already used to display
+  // an address under a property's name.
+  function effectiveAddress(p){
+    return p.address || addressByName[p.name] || '';
+  }
+
+  // A single free-text address like "440 Gander Drive, Charlottesville, VA
+  // 22903" already contains the street name, city, state, and zip as
+  // substrings, so a plain substring match against the full address covers
+  // "search by city", "search by street name", etc. with no extra parsing.
+  function matchesSearch(p, q){
+    if (!q) return true;
+    return p.name.toLowerCase().includes(q)
+      || (p.notes||'').toLowerCase().includes(q)
+      || effectiveAddress(p).toLowerCase().includes(q);
+  }
+
   function filteredBasis(){
     let rows = enrichedBasis();
     if (activeFilter !== 'all') rows = rows.filter(p => p._markType === activeFilter);
     if (searchTerm.trim()){
       const q = searchTerm.trim().toLowerCase();
-      rows = rows.filter(p => p.name.toLowerCase().includes(q) || (p.notes||'').toLowerCase().includes(q));
+      rows = rows.filter(p => matchesSearch(p, q));
     }
     if (sortCol){
       rows = rows.slice().sort((a,b)=>{
@@ -1515,7 +1534,7 @@
       </div>
       <div class="controls">
         <div class="search">
-          <input type="text" id="searchInput" placeholder="Search properties or notes…" value="${searchTerm.replace(/"/g,'&quot;')}">
+          <input type="text" id="searchInput" placeholder="Search by name, address, city, notes…" value="${searchTerm.replace(/"/g,'&quot;')}">
         </div>
         <div class="filterset" id="filterset">
           ${filters.map(f=>`<button class="chip ${activeFilter===f.id?'active':''}" data-filter="${f.id}">${f.label}</button>`).join('')}
@@ -2774,11 +2793,11 @@ Include every property found (one entry each), and one period object per as-of d
       const basisA = a.basis, basisB = b ? b.basis : null;
       const delta = (basisB != null && basisA != null) ? (basisB - basisA) : null;
       const deltaPct = (delta != null && basisA) ? (delta / Math.abs(basisA)) * 100 : null;
-      rows.push({ name: a.name, basisA, basisB, delta, deltaPct, status: b ? 'common' : 'onlyA' });
+      rows.push({ name: a.name, address: effectiveAddress(a), basisA, basisB, delta, deltaPct, status: b ? 'common' : 'onlyA' });
     });
     arrB.forEach(b => {
       const key = b.name.trim().toLowerCase();
-      if (!seen.has(key)) rows.push({ name: b.name, basisA: null, basisB: b.basis, delta: null, deltaPct: null, status: 'onlyB' });
+      if (!seen.has(key)) rows.push({ name: b.name, address: effectiveAddress(b), basisA: null, basisB: b.basis, delta: null, deltaPct: null, status: 'onlyB' });
     });
     return rows;
   }
@@ -2798,7 +2817,7 @@ Include every property found (one entry each), and one period object per as-of d
         <select id="compareBSelect">${periodOrder.map(l=>`<option value="${l}" ${l===compareB?'selected':''}>${l}</option>`).join('')}</select>
       </div>
       <div class="controls">
-        <div class="search"><input type="text" id="compareSearchInput" placeholder="Search properties…" value="${compareSearch.replace(/"/g,'&quot;')}"></div>
+        <div class="search"><input type="text" id="compareSearchInput" placeholder="Search by name or address…" value="${compareSearch.replace(/"/g,'&quot;')}"></div>
         <div class="sort-hint">Click a column to sort</div>
       </div>
       <div class="tablewrap">
@@ -2825,7 +2844,7 @@ Include every property found (one entry each), and one period object per as-of d
     let rows = buildComparison(compareA, compareB);
     if (compareSearch.trim()){
       const q = compareSearch.trim().toLowerCase();
-      rows = rows.filter(r => r.name.toLowerCase().includes(q));
+      rows = rows.filter(r => r.name.toLowerCase().includes(q) || (r.address||'').toLowerCase().includes(q));
     }
     rows.sort((a,b) => {
       let av = a[compareSortCol], bv = b[compareSortCol];
@@ -3190,7 +3209,7 @@ Include every property found (one entry each), and one period object per as-of d
 
   function renderTrendsPanel(container){
     const q = searchTerm.trim().toLowerCase();
-    const names = allTrendPropertyNames().filter(n => !q || n.toLowerCase().includes(q));
+    const names = allTrendPropertyNames().filter(n => !q || n.toLowerCase().includes(q) || (addressByName[n]||'').toLowerCase().includes(q));
     if (names.length === 0){
       container.innerHTML = `<div class="empty">${searchTerm.trim() ? 'No properties match this search.' : 'No properties to chart yet.'}</div>`;
       return;
@@ -3376,7 +3395,7 @@ Include every property found (one entry each), and one period object per as-of d
     } else if (activeTab === 'compare'){
       renderComparePanel(area);
     } else if (activeTab === 'trends'){
-      area.innerHTML = `<div class="controls"><div class="search"><input type="text" id="searchInput4" placeholder="Search properties…" value="${searchTerm.replace(/"/g,'&quot;')}"></div></div><div id="subpanel"></div>`;
+      area.innerHTML = `<div class="controls"><div class="search"><input type="text" id="searchInput4" placeholder="Search by name or address…" value="${searchTerm.replace(/"/g,'&quot;')}"></div></div><div id="subpanel"></div>`;
       renderTrendsPanel(document.getElementById('subpanel'));
       document.getElementById('searchInput4').addEventListener('input', (e)=>{
         searchTerm = e.target.value;
